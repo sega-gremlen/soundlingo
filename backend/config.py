@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     # App settings
     SESSION_DURATION: int = 3600  # Длительность сесси в секундах
     MP3_FOLDER: Path = Path(__file__).parent.parent.absolute() / "frontend" / "public" / "songs"
+    MP3_FOLDER_FOR_FRONT: str = "public/songs"
+
     JINJA_TEMPLATES: Jinja2Templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
     # Inside auth
@@ -63,6 +65,13 @@ class Settings(BaseSettings):
     GENIUS_TOKEN: str
     SPOTIFY_CLIENT_ID: str
     SPOTIFY_CLIENT_SECRET: str
+
+    # AWS
+    CLOUDFRONT_DOMAIN: str
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+    S3_ENDPOINT_URL: str
+    S3_BUCKET_NAME: str
 
 
 settings = Settings()

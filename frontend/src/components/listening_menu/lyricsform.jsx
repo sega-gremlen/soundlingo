@@ -29,7 +29,6 @@ const LyricsForm = ({lyrics, socket}) => {
     );
 
 
-
     // Функция для блокировки после правильно введенного слова
     const [editable, setEditable] = useState(
         lyricsData.map((section) => {

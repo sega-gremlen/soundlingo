@@ -1,8 +1,10 @@
 import asyncio
 import json
+import pprint
 import random
 import re
 import string
+import uuid
 from random import choice
 
 from requests.exceptions import SSLError, Timeout
@@ -13,6 +15,10 @@ from lyricsgenius import Genius
 from yandex_music import ClientAsync
 
 from backend.config import settings
+
+import unicodedata
+
+from backend.lyrics_states.dependencies import create_lyrics_state
 
 
 async def take_selector_type(artist_name='', song_title=''):
@@ -37,14 +43,17 @@ class SongsApi:
     genius_client.verbose = False
 
     @classmethod
-    async def _split_lyrics(cls, lyrics):
-        # Регулярное выражение для поиска частей текста с заголовками и содержимым.
+    async def _split_lyrics(cls, lyrics) -> (list, int):
+        # Регулярное выражение для поиска частей текста с заголовками и содержимым
         matches = re.findall(r'\[(.*?)](.*?)(?=\[\w|\Z)', lyrics, re.DOTALL)
 
         # Создание списка словарей
         result = [{match[0]: match[1].strip()} for match in matches]
 
         # print(result)
+
+        # Считаем количество слов
+        word_count = 0
 
         for song_part in result:
             for song_part_name, rows in song_part.items():
@@ -54,12 +63,15 @@ class SongsApi:
                     for i, word in enumerate(song_part[song_part_name][row].split(' ')):
                         new_word_form = {
                             'value': word,
-                            'filled': False
+                            # 'filled': False
                         }
                         row_dict[i] = new_word_form
+                        word_count += 1
                     song_part[song_part_name][row] = row_dict
 
-        return result
+        # await create_lyrics_state(result)
+
+        return result, word_count
 
     @classmethod
     async def get_track_lyrics(cls, artist_name: str, song_name: str):
@@ -79,9 +91,10 @@ class SongsApi:
                     '[' in song.lyrics,
                     ']' in song.lyrics,
             )):
-                splited_lyrics = await cls._split_lyrics(song.lyrics)
+                lyrics = unicodedata.normalize('NFKD', song.lyrics)
+                result = await cls._split_lyrics(lyrics)
                 print(f'Genius - {artist_name} - {song_name} - Слова найдены')
-                return splited_lyrics
+                return result
             else:
                 print(f'Genius - {artist_name} - {song_name} - '
                       f'Плохие слова')
@@ -90,12 +103,12 @@ class SongsApi:
 
     @staticmethod
     async def parse_spotify_song_json(song: dict):
+        bad_words = ['Instrumental', 'demo', 'remaster', '(feat', 'live']
         song_name: str = song['name']
-        if ' (feat' in song_name:
-            song_name = song_name[:song_name.index('(feat')]
 
-        if 'remaster' in song_name.lower():
-            song_name = song_name[:song_name.lower().index('remaster')]
+        for word in bad_words:
+            if word.lower() in song_name.lower():
+                song_name = song_name[:song_name.lower().index(word.lower())]
 
         while not song_name[-1].isalnum():
             song_name = song_name[:-1]
@@ -136,6 +149,8 @@ class SongsApi:
 
             offset = random.randint(0, 5)
 
+        # print(q)
+
         songs = cls.spotify_client.search(q=q, limit=50, offset=offset)['tracks']['items']
 
         def filter_params(song_: dict):
@@ -172,20 +187,19 @@ class SongsApi:
             songs = list(filter(filter_, songs['tracks']['results']))
 
             if songs:
-                file_name = f'{artist_name} {song_name}.mp3'
-                download_path = str(settings.MP3_FOLDER / file_name)
-                await songs[0].download_async(download_path)
+                file_name = f'{str(uuid.uuid4())}.mp3'
+                file_path = str(settings.MP3_FOLDER / file_name)
+                await songs[0].download_async(file_path)
                 print(f'YM - {artist_name} - {song_name} - Трек скачан')
-                return file_name
+                return file_name, file_path
         print(f'YM - {artist_name} - {song_name} - Трек не найден')
+        return None, None
 
 
 if __name__ == '__main__':
     async def main():
-        print(await SongsApi.parse_spotify_song_json(await SongsApi.get_song('Steve Miller Band', 'Abracadabra')))
-        # pprint.pprint(await SongsApi.get_track_lyrics('Mac DeMarco', 'My Kind of Woman'))
-
-
+        # print(await SongsApi.parse_spotify_song_json(await SongsApi.get_song('Steve Miller Band', 'Abracadabra')))
+        pprint.pprint(await SongsApi.get_track_lyrics('Foals', 'Cassius'))
 
 
     asyncio.run(main())

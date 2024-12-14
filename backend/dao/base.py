@@ -36,8 +36,6 @@ class BaseDAO:
             # Не нужно добавлять объект снова, если он уже существует
             await session.commit()
 
-
-
     @classmethod
     async def find_all(cls, *filter_by):
         async with async_sessionmaker() as session:

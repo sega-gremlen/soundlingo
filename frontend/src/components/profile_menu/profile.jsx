@@ -51,6 +51,7 @@ const ProfileForm = ({profileData}) => {
                 alignItems: 'center',
                 // height: '100%',
                 height: 510,
+                // width: 300,
                 position: 'relative'
             }}
         >
@@ -92,7 +93,9 @@ const ProfileForm = ({profileData}) => {
                     total={profileData.sessions.length} // Общее количество элементов
                     onChange={handlePageChange} // Обработчик изменения страницы
                 />
-                <List
+                <List style={{
+                    width: 500
+                }}
                     header={<div
                         style={{
                             display: 'flex',
@@ -113,7 +116,7 @@ const ProfileForm = ({profileData}) => {
                             onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f0f0f0'} // Возврат к исходному цвету
                         >
                             <div style={{
-                                width: 300,
+                                // width: 300,
                                 whiteSpace: 'nowrap', // Не переносить текст
                                 overflow: 'hidden', // Скрыть переполнение
                                 textOverflow: 'ellipsis', // Добавить многоточие

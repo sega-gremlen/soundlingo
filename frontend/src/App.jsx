@@ -79,12 +79,14 @@ const App = () => {
         }));
 
         return (
-            <Layout style={{minHeight: '900px'}}>
+            <Layout style={{
+                minHeight: '900px',
+            }}>
                 <Header
                     style={{
                         position: 'sticky',
                         top: 2,
-                        zIndex: 2,
+                        zIndex: 123,
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',

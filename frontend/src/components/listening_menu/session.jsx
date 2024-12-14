@@ -1,15 +1,22 @@
-import {useEffect, useState} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {useLocation, useParams} from 'react-router-dom';
 import MyAudioPlayer from './playback.jsx';
-import LyricsForm from "./lyricsform.jsx";
-import {Spin} from "antd";
+// import LyricsForm from "./lyricsform.jsx";
+import LyricsformNew from "./lyricsform_new.jsx";
+import {Button, Spin} from "antd";
 
-const Session = ( { setError }) => {
+const Session = ({setError}) => {
     const location = useLocation();
     const {sessionId} = useParams(); // Получаем sessionId из URL
     const [sessionData, setSessionData] = useState(null);
     const [socket, setSocket] = useState(null); // Состояние для WebSocket
+    const [points, setPoints] = useState({
+        all_points: 0,
+        valid_points: 0,
+        revealed_points: 0
+    });
 
+    const socketRef = useRef(null);
 
     useEffect(() => {
         if (sessionId) {
@@ -32,29 +39,50 @@ const Session = ( { setError }) => {
             };
             fetchData();
         } else {
-            console.log("нет сешн ид")
+            console.log("нет sessionId")
         }
     }, [location.state, sessionId]);
 
-    console.log(1)
-
-
     useEffect(() => {
-        // Создаем WebSocket подключение только если его еще нет и есть sessionId
         if (!socket) {
             const newSocket = new WebSocket(`ws://localhost:8000/sessions/${sessionId}`);
             setSocket(newSocket);
-        }
-    }, [socket, sessionId]);
+            socketRef.current = newSocket;
 
+            // Обработка сообщений от WebSocket
+            newSocket.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log("Получено сообщение от WebSocket:", message);
+
+                    // Обновляем данные очков, если они есть в сообщении
+                    if (message.all_points !== undefined) {
+                        setPoints((prev) => ({
+                            ...prev,
+                            all_points: message.all_points || prev.all_points,
+                            valid_points: message.valid_points || prev.valid_points,
+                            revealed_points: message.revealed_points || prev.revealed_points
+                        }));
+                    }
+                } catch (err) {
+                    console.error("Ошибка обработки сообщения WebSocket:", err);
+                }
+            };
+        }
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+                socketRef.current = null;
+            }
+        };
+    }, [sessionId]);
 
     if (!sessionData) {
         return <Spin size="large"/>;
     }
 
-    const {lyrics, image_url, artist_name, song_title} = sessionData;
-
-    console.log(2)
+    const {lyrics, album_cover_url, artist_name, song_title, mp3_url, lyrics_state} = sessionData;
 
     return (
         <div
@@ -62,15 +90,44 @@ const Session = ( { setError }) => {
                 display: "flex",
                 flexDirection: 'column',
                 alignItems: "center",
+                position: 'relative'
             }}
         >
             <MyAudioPlayer
-                albumCover={image_url}
+                style={{
+                    position: 'relative'
+                }}
+                albumCover={album_cover_url}
                 artist={artist_name}
                 title={song_title}
-                audioSrc={`/songs/${artist_name} ${song_title}.mp3`}
+                audioSrc={mp3_url}
             />
-            <LyricsForm lyrics={lyrics} socket={socket}/>
+
+            {/*<LyricsForm lyrics={lyrics} socket={socket} lyrics_state={lyrics_state}/>*/}
+            <LyricsformNew
+                style={{
+                    marginTop: 30,
+                    display: 'flex',
+                }}
+                lyrics={lyrics}
+                socket={socket}
+                lyricsState={lyrics_state}/>
+
+            {/* Очки в правой части экрана */}
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 150,
+                    right: 100,
+                    textAlign: 'right',
+                    fontSize: '22px',
+                    color: 'gray'
+                }}
+            >
+                <div style={{color: 'gray'}}>All Points: {points.all_points}</div>
+                <div style={{color: 'green'}}>Valid Points: {points.valid_points}</div>
+                <div style={{color: 'orange'}}>Revealed Points: {points.revealed_points}</div>
+            </div>
         </div>
     );
 };

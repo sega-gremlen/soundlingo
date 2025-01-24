@@ -1,0 +1,28 @@
+/*.score-bar {*/
+/*    display: flex;*/
+/*    height: 15px;*/
+/*    width: 100%;*/
+/*    position: sticky;*/
+/*    top: 0px;*/
+/*    z-index: 5;*/
+/*    overflow: hidden;*/
+    /*align-content: center;*/
+    /*align-items: center;*/
+
+/*}*/
+
+.score-bar-segment {
+    height: 100%;
+}
+
+.score-bar-segment.valid {
+    background-color: rgb(131, 255, 131);
+}
+
+.score-bar-segment.revealed {
+    background-color: #ffe19a;
+}
+
+.score-bar-segment.remaining {
+    background-color: rgb(250, 151, 151);
+}

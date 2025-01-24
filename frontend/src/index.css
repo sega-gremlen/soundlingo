@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+
+linearGradientButton {
+    border-width: 0;
+
+    > span {
+        position: relative;
+    }
+
+    &::before {
+        content: '';
+        background: linear-gradient(135deg, #6253e1, #04befe);
+        position: absolute;
+        inset: 0;
+        opacity: 1;
+        transition: all 0.3s;
+        border-radius: inherit;
+    }
+
+    &:hover::before {
+        opacity: 0;
+    }
+}
+
+input[type="range"] {
+  accent-color: #000000;
+}

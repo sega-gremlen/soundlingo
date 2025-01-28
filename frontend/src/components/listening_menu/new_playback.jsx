@@ -93,7 +93,7 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                 position: 'sticky',
                 top: 15,
                 zIndex: 5,
-                backgroundColor: "white",
+                backgroundColor: '#fffaf7',
                 margin: 0,
                 padding: 0,
             }}>
@@ -169,17 +169,18 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
             <div
                 style={{
                     // marginTop: "4px",
-                    width: "100%",
                     position: 'sticky',
                     top: 74,
                     zIndex: 5,
-                    backgroundColor: "white",
+                    backgroundColor: '#fffaf7',
                     display: "flex",
                     flexDirection: "column",
-                    maxWidth: "50%",
+                    // maxWidth: "50%",
                     margin: "0 auto",
                     boxSizing: "border-box",
-                    minWidth: "550px",
+                    maxWidth: "800px",
+                    minWidth: "300px",
+                    width: "100%",
                     // margin: 0,
                     padding: 0,
                 }}>
@@ -238,7 +239,7 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                     <div style={{
                         display: "flex",
                         position: "absolute",
-                        left: "65%",
+                        left: "62%",
                         top: "50%",
                         transform: "translate(-50%, -50%)",
                     }}>

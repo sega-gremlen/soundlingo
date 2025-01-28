@@ -55,3 +55,8 @@ ErrorOnAuthToken = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail='Ошибка при получении токена'
 )
+
+UserNicknameAlreadyExists = HTTPException(
+    status_code=status.HTTP_409_CONFLICT,
+    detail='The provided nickname is already in use. Please choose a different one.'
+)

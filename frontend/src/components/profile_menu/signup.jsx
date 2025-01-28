@@ -1,8 +1,10 @@
-import { EyeInvisibleOutlined, EyeTwoTone, LockOutlined, UserOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Form, Input, Modal } from 'antd';
+import {useState} from 'react';
+import {EyeInvisibleOutlined, EyeTwoTone, LockOutlined, UserOutlined, ArrowLeftOutlined} from '@ant-design/icons';
+import {Button, Checkbox, Form, Input, Modal} from 'antd';
 
-const SignupForm = ({ setError, onBackToLogin }) => {
+const SignupForm = ({setError, onBackToLogin}) => {
     const [form] = Form.useForm();
+    const [agreementChecked, setAgreementChecked] = useState(false);
 
     const onFinish = async (values) => {
         try {
@@ -14,20 +16,20 @@ const SignupForm = ({ setError, onBackToLogin }) => {
                 body: JSON.stringify({
                     email: values.email,
                     password: values.password,
-                    nickname: values.nickname,
+                    nickname: values.nickname || '', // Отправляем пустую строку если nickname не указан
                 }),
                 credentials: 'include',
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                setError(`Ошибка: ${response.status} - ${errorData.detail || 'No details provided'}`);
+                setError(`Error: ${response.status} - ${errorData.detail || 'No details provided'}`);
                 throw new Error(`Network response was not ok: ${errorData.message}`);
             }
 
             Modal.success({
-                title: 'Регистрация завершена',
-                content: 'Пожалуйста, подтвердите свой email. Перейдите на свою почту для подтверждения.',
+                title: 'Registration Completed',
+                content: 'Please confirm your email. Check your inbox for the confirmation link.',
                 onOk: () => {
                     window.location.href = '/profile';
                 },
@@ -38,48 +40,45 @@ const SignupForm = ({ setError, onBackToLogin }) => {
     };
 
     return (
-        <div
-            className="signup-form"
-            style={{ width: 350 }}
-        >
+        <div className="signup-form" style={{width: 350}}>
             <Button
                 type="text"
-                icon={<ArrowLeftOutlined />}
+                icon={<ArrowLeftOutlined/>}
                 onClick={onBackToLogin}
-                style={{ marginBottom: 16 }}
+                style={{marginBottom: 16}}
             />
-            <h2 style={{ textAlign: 'center', fontSize: 24, fontWeight: 600 }}>Sign Up</h2>
+            <h2 style={{textAlign: 'center', fontSize: 24, fontWeight: 600}}>Sign Up</h2>
 
             <Form
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                style={{ marginTop: 24, marginBottom: -14 }}
+                style={{marginTop: 24, marginBottom: -14}}
             >
                 <Form.Item
                     name="email"
-                    rules={[{ required: true, message: 'Please input your E-mail!', type: 'email' }]}
+                    rules={[{required: true, message: 'Please input your E-mail!', type: 'email'}]}
                 >
-                    <Input prefix={<UserOutlined />} placeholder="E-mail" style={{ fontSize: '16px' }} />
+                    <Input prefix={<UserOutlined/>} placeholder="E-mail" style={{fontSize: '16px'}}/>
                 </Form.Item>
 
                 <Form.Item
                     name="nickname"
-                    rules={[{ required: true, message: 'Please input your nickname!', whitespace: true }]}
+                    rules={[{message: 'Please input a valid nickname!', whitespace: true}]} // Поле необязательное
                 >
-                    <Input placeholder="Nickname" style={{ fontSize: '16px' }} />
+                    <Input placeholder="Nickname (optional)" style={{fontSize: '16px'}}/>
                 </Form.Item>
 
                 <Form.Item
                     name="password"
-                    rules={[{ required: true, message: 'Please input your Password!' }]}
+                    rules={[{required: true, message: 'Please input your Password!'}]}
                     hasFeedback
                 >
                     <Input.Password
-                        prefix={<LockOutlined />}
+                        prefix={<LockOutlined/>}
                         placeholder="Password"
-                        iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-                        style={{ fontSize: '16px' }}
+                        iconRender={(visible) => (visible ? <EyeTwoTone/> : <EyeInvisibleOutlined/>)}
+                        style={{fontSize: '16px'}}
                     />
                 </Form.Item>
 
@@ -88,8 +87,8 @@ const SignupForm = ({ setError, onBackToLogin }) => {
                     dependencies={['password']}
                     hasFeedback
                     rules={[
-                        { required: true, message: 'Please confirm your password!' },
-                        ({ getFieldValue }) => ({
+                        {required: true, message: 'Please confirm your password!'},
+                        ({getFieldValue}) => ({
                             validator(_, value) {
                                 if (!value || getFieldValue('password') === value) {
                                     return Promise.resolve();
@@ -100,10 +99,10 @@ const SignupForm = ({ setError, onBackToLogin }) => {
                     ]}
                 >
                     <Input.Password
-                        prefix={<LockOutlined />}
+                        prefix={<LockOutlined/>}
                         placeholder="Confirm Password"
-                        iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
-                        style={{ fontSize: '16px' }}
+                        iconRender={(visible) => (visible ? <EyeTwoTone/> : <EyeInvisibleOutlined/>)}
+                        style={{fontSize: '16px'}}
                     />
                 </Form.Item>
 
@@ -111,16 +110,29 @@ const SignupForm = ({ setError, onBackToLogin }) => {
                     name="agreement"
                     valuePropName="checked"
                     rules={[{
-                        validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('Should accept agreement')),
+                        validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('You must accept the agreement')),
                     }]}
                 >
-                    <Checkbox>
-                        I agree to the <a href="">terms</a>, <a href="">privacy policy</a> and allow my personal data to be processed.
+                    <Checkbox onChange={(e) => setAgreementChecked(e.target.checked)}>
+                        I agree to the <a href="">terms</a>, <a href="">privacy policy</a> and allow my personal data to
+                        be processed.
                     </Checkbox>
                 </Form.Item>
 
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" block size="large" style={{ backgroundColor: '#1890ff' }}>
+                    <Button
+                        type="primary"
+                        htmlType="submit"
+                        block
+                        size="large"
+                        style={{
+                            backgroundColor: agreementChecked ? '#000' : '#f0f0f0',
+                            borderColor: agreementChecked ? '#000' : '#d9d9d9',
+                            color: agreementChecked ? '#fff' : 'rgba(0, 0, 0, 0.25)',
+                            cursor: agreementChecked ? 'pointer' : 'not-allowed'
+                        }}
+                        disabled={!agreementChecked}
+                    >
                         Register
                     </Button>
                 </Form.Item>

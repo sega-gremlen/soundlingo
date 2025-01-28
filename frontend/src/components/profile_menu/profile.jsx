@@ -4,7 +4,7 @@ import React, {useState} from "react";
 const ProfileForm = ({profileData}) => {
     const authTokenTitle = import.meta.env.VITE_APP_AUTH_TOKEN_TITLE;
     const [currentPage, setCurrentPage] = useState(1); // Состояние для текущей страницы
-    const pageSize = 5; // Количество элементов на странице
+    const pageSize = 8; // Количество элементов на странице
 
     const handleLogout = async () => {
         try {
@@ -44,15 +44,15 @@ const ProfileForm = ({profileData}) => {
 
     return (
         <div
-            className="space-y-10"
+            // className="space-y-10"
             style={{
-                display: 'flex',
+                // display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                // height: '100%',
-                height: 510,
-                // width: 300,
-                position: 'relative'
+                position: 'relative',
+                maxWidth: '500px',
+                minWidth: '300px',
+                width: '100%',
             }}
         >
             <div style={{
@@ -61,27 +61,30 @@ const ProfileForm = ({profileData}) => {
                 justifyContent: 'space-between', // Раздвигаем элементы по краям
                 alignItems: 'center', // Центрируем по вертикали
                 width: '100%', // Занимаем всю ширину родителя
-                padding: '0 10px', // Немного отступа слева и справа
+                marginBottom: '10px'
             }}>
-                <h1
-                    style={{
-                        marginBottom: "10px"
-                    }}
-                >
-                    ID: {profileData.user_id}
-                </h1>
+                <div>
+                    <h1>
+                        ID: {profileData.user_id}
+                    </h1>
+                    <h1>
+                        Nickname: {profileData.nickname}
+                    </h1>
+                </div>
 
-                <Button onClick={handleLogout}>Выйти из профиля</Button>
+
+                <Button onClick={handleLogout}>Log out</Button>
             </div>
 
             <div
                 className='space-y-2'
                 style={{
+                    display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center', // Раздвигаем элементы по краям
+                    // justifyContent: 'center', // Раздвигаем элементы по краям
                     alignContent: 'center',
-                    justifyItems: 'center'
+                    justifyItems: 'center',
                 }}
             >
                 <Pagination
@@ -94,38 +97,43 @@ const ProfileForm = ({profileData}) => {
                     onChange={handlePageChange} // Обработчик изменения страницы
                 />
                 <List style={{
-                    width: 500
+                    // width: '100%',
+                    // maxWidth: '800px',
+                    // minWidth: '300px',
+                    width: '100%',
                 }}
-                    header={<div
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                        }}
-                    >Your Sessions</div>} // Заголовок списка
-                    bordered
-                    dataSource={paginatedSessions} // Используем отсечённые данные
-                    renderItem={item => ( // Форматирование каждой сессии
-                        <List.Item
-                            onClick={() => handleSessionClick(item.id)}
-                            style={{
-                                cursor: 'pointer',
-                                backgroundColor: '#f0f0f0', // Цвет фона при наведении
-                                transition: 'background-color 0.3s ease',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e6f7ff'} // Цвет фона при наведении
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f0f0f0'} // Возврат к исходному цвету
-                        >
-                            <div style={{
-                                // width: 300,
-                                whiteSpace: 'nowrap', // Не переносить текст
-                                overflow: 'hidden', // Скрыть переполнение
-                                textOverflow: 'ellipsis', // Добавить многоточие
-                            }}>
-                                <strong>{item.title}</strong> by {item.artist_name}<br/>
-                                {item.created_date}
-                            </div>
-                        </List.Item>
-                    )}
+                      header={<div
+                          style={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              width: '100%'
+                          }}
+                      >Your Sessions</div>} // Заголовок списка
+                      bordered
+                      dataSource={paginatedSessions} // Используем отсечённые данные
+                      renderItem={item => ( // Форматирование каждой сессии
+                          <List.Item
+                              onClick={() => handleSessionClick(item.id)}
+                              style={{
+                                  // display: 'flex',
+                                  cursor: 'pointer',
+                                  backgroundColor: '#f0f0f0', // Цвет фона при наведении
+                                  transition: 'background-color 0.3s ease',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e6f7ff'} // Цвет фона при наведении
+                              onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f0f0f0'} // Возврат к исходному цвету
+                          >
+                              <div style={{
+                                  // width: 300,
+                                  whiteSpace: 'nowrap', // Не переносить текст
+                                  overflow: 'hidden', // Скрыть переполнение
+                                  textOverflow: 'ellipsis', // Добавить многоточие
+                              }}>
+                                  <strong>{item.title}</strong> by {item.artist_name}<br/>
+                                  {item.created_date}
+                              </div>
+                          </List.Item>
+                      )}
                 />
             </div>
         </div>

@@ -1,11 +1,8 @@
 import {useState, useEffect, useRef} from 'react';
 import {useLocation, useParams} from 'react-router-dom';
-// import MyAudioPlayer from './player.jsx';
 import MyNewAudioPlayer from './new_playback.jsx'
-
-// import LyricsForm from "./lyricsform.jsx";
 import LyricsformNew from "./lyricsform_new.jsx";
-import {Button, Spin} from "antd";
+import {Button, Layout, Spin} from "antd";
 import ScoreBar from './score_bar.jsx';
 
 const Session = ({setError}) => {
@@ -97,55 +94,55 @@ const Session = ({setError}) => {
     const {lyrics, album_cover_url, artist_name, song_title, mp3_url, lyrics_state} = sessionData;
 
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: 'column',
-                alignItems: "center",
-                position: 'relative',
-                width: '100%'
-            }}
-        >
-            <ScoreBar points={points}/>
-
-            <MyNewAudioPlayer
-                albumCover={album_cover_url}
-                artist={artist_name}
-                title={song_title}
-                audioSrc={mp3_url}
-                revealModeHandler={revealModeHandler}
-            />
-
-            <LyricsformNew
+            <div
                 style={{
-                    marginTop: 30,
-                    display: 'flex',
+                    display: "flex",
+                    flexDirection: 'column',
+                    alignItems: "center",
+                    position: 'relative',
+                    width: '100%',
                 }}
-                lyrics={lyrics}
-                socket={socket}
-                lyricsState={lyrics_state}
-                setIsRevealMode={setIsRevealMode}
-                isRevealMode={isRevealMode}
-                setHighlightIncorrect={setHighlightIncorrect}
+            >
+                <ScoreBar points={points}/>
 
-            />
+                <MyNewAudioPlayer
+                    albumCover={album_cover_url}
+                    artist={artist_name}
+                    title={song_title}
+                    audioSrc={mp3_url}
+                    revealModeHandler={revealModeHandler}
+                />
 
-            {/* Очки в правой части экрана */}
-            {/*<div*/}
-            {/*    style={{*/}
-            {/*        position: 'fixed',*/}
-            {/*        top: 150,*/}
-            {/*        right: 100,*/}
-            {/*        textAlign: 'right',*/}
-            {/*        fontSize: '22px',*/}
-            {/*        color: 'gray'*/}
-            {/*    }}*/}
-            {/*>*/}
-            {/*    <div style={{color: 'gray'}}>All Points: {points.all_points}</div>*/}
-            {/*    <div style={{color: 'green'}}>Valid Points: {points.valid_points}</div>*/}
-            {/*    <div style={{color: 'orange'}}>Revealed Points: {points.revealed_points}</div>*/}
-            {/*</div>*/}
-        </div>
+                <LyricsformNew
+                    style={{
+                        marginTop: 30,
+                        display: 'flex',
+                    }}
+                    lyrics={lyrics}
+                    socket={socket}
+                    lyricsState={lyrics_state}
+                    setIsRevealMode={setIsRevealMode}
+                    isRevealMode={isRevealMode}
+                    setHighlightIncorrect={setHighlightIncorrect}
+
+                />
+
+                {/* Очки в правой части экрана */}
+                {/*<div*/}
+                {/*    style={{*/}
+                {/*        position: 'fixed',*/}
+                {/*        top: 150,*/}
+                {/*        right: 100,*/}
+                {/*        textAlign: 'right',*/}
+                {/*        fontSize: '22px',*/}
+                {/*        color: 'gray'*/}
+                {/*    }}*/}
+                {/*>*/}
+                {/*    <div style={{color: 'gray'}}>All Points: {points.all_points}</div>*/}
+                {/*    <div style={{color: 'green'}}>Valid Points: {points.valid_points}</div>*/}
+                {/*    <div style={{color: 'orange'}}>Revealed Points: {points.revealed_points}</div>*/}
+                {/*</div>*/}
+            </div>
     );
 };
 

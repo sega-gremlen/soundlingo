@@ -3,7 +3,7 @@ import {Layout, theme} from 'antd';
 import {BrowserRouter as Router, Route, Routes, useNavigate, useLocation} from 'react-router-dom';
 import Listening_menu from "./components/listening_menu/listening_menu.jsx";
 import MyProfile from "./components/profile_menu/menu_profile.jsx";
-import About from "./components/about.jsx";
+import About from "./components/about_menu/about.jsx";
 import Session from "./components/listening_menu/session.jsx";
 import Signup_test from "./components/profile_menu/signup.jsx";
 import Leaderbord from "./components/leaderbord_menu/leaderbord.jsx"
@@ -71,11 +71,11 @@ const App = () => {
         };
 
         const activeStyle = {
-            backgroundColor: 'rgba(24, 144, 255, 0.6)',
+            backgroundColor: '#F0BB78',
         };
 
         const hoverStyle = {
-            backgroundColor: 'rgba(24, 144, 255, 0.3)',
+            backgroundColor: '#543A14',
         };
 
         const menuItems = menuLabels.map((label, index) => ({
@@ -87,17 +87,18 @@ const App = () => {
 
         return (
             <Layout style={{
-                minHeight: '900px',
+                minHeight: '100vh', // Занимает всю высоту экрана
+                display: 'flex',
+                flexDirection: 'column'
             }}>
                 <Header
                     style={{
-                        // position: 'sticky',
-                        top: 2,
+                        top: 0,
                         zIndex: 123,
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        backgroundColor: '#001529',
+                        backgroundColor: '#131010',
                     }}
                 >
                     {menuItems.map((item) => (
@@ -125,12 +126,13 @@ const App = () => {
                     style={{
                         display: 'flex',
                         // alignItems: "center",
-                        justifyContent: "center",
-                        padding: '24px 12px',
+                        // justifyContent: "center",
+                        // padding: '24px 12px',
                         flexDirection: "column",
                         // width: '100%',
                         // height: '100%',
                         // textAlign: 'center',
+                        backgroundColor: "#fffaf7"
                     }}
                 >
                     <div style={{
@@ -152,13 +154,14 @@ const App = () => {
                             </div>
                         )}
                         <div style={{
-                            padding: 24,
+                            paddingTop: "24px",
+                            paddingBottom: "24px",
                             flexDirection: "column",
                             alignItems: 'center',
                             display: 'flex',
                             justifyContent: 'center',
-                            background: colorBgContainer,
-                            borderRadius: borderRadiusLG,
+                            background: '#fffaf7',
+                            // borderRadius: borderRadiusLG,
                         }}>
                             <Routes>
                                 <Route path="/" element={<Listening_menu setError={setError}/>}/>
@@ -177,9 +180,21 @@ const App = () => {
                 <Footer
                     style={{
                         textAlign: 'center',
+                        marginTop: 'auto', // Прижимает футер к низу
+                        backgroundColor: '#131010'
                     }}
                 >
-                    Created by <a href="https://github.com/sega-gremlen" className="text-blue-700">@sega-gremlen</a>
+                    <p
+                    style={{
+                        color: "white"
+                    }}>
+                        Created by <a
+                        style={{
+                            color: '#7fa6bf'
+                        }}
+                        href="https://github.com/sega-gremlen">@sega-gremlen</a>
+                    </p>
+
                 </Footer>
             </Layout>
         );

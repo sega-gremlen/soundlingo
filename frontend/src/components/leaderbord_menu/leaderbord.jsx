@@ -92,9 +92,10 @@ function Leaderboard() {
     return (
         <div style={{
             width: '70%',
-            height: '100vh',
+            height: '100%',
             position: 'relative',
-            padding: '20px',
+            padding: "0px",
+            margin: "0px"
         }}>
             <Table
                 columns={columns}
@@ -110,7 +111,7 @@ function Leaderboard() {
                 scroll={{ y: 'calc(100vh - 180px)' }}
                 style={{
                     height: '100%',
-                    overflow: 'auto',
+                    // overflow: 'auto',
                 }}
                 components={{
                     body: {

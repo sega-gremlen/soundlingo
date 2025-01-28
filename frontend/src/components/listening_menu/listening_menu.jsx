@@ -1,37 +1,37 @@
-import {useState, useEffect} from 'react';
-import {Input, Button, message, Spin} from 'antd';
+import React, {useState, useEffect} from 'react';
+import {Input, Button, message, Spin, Divider} from 'antd';
 import {useNavigate} from 'react-router-dom';
 
-const Listening_menu = ({ setError }) => {
+const ListeningMenu = ({setError}) => {
     const [field1, setField1] = useState('');
     const [field2, setField2] = useState('');
     const [isDisabled, setIsDisabled] = useState(true);
     const [loading, setLoading] = useState(false);
     const [loadingStatus, setLoadingStatus] = useState('');
-    const [isBlurred, setIsBlurred] = useState(true); // Состояние для размытия
+    const [isBlurred, setIsBlurred] = useState(true); // State for blur
 
     const navigate = useNavigate();
 
-    // useEffect для проверки доступности сервера
+    // useEffect to check server availability
     useEffect(() => {
         const checkServerStatus = async () => {
             try {
                 const response = await fetch('http://localhost:8000/check_user_verification', {
                     method: 'GET',
                     credentials: 'include',
-                })  // Замените на ваш реальный эндпоинт
+                });  // Replace with your actual endpoint
                 if (!response.ok) {
                     const errorData = await response.json();
-                    setError(`Ошибка: ${response.status} - ${errorData.detail || 'No details provided'}`); // Устанавливаем сообщение об ошибке
+                    setError(`Error: ${response.status} - ${errorData.detail || 'No details provided'}`); // Set error message
 
                 } else {
-                    setIsBlurred(false); // Устанавливаем состояние размытия
+                    setIsBlurred(false); // Set blur state
                 }
 
 
             } catch (error) {
-                console.error('Ошибка при обращении к серверу:', error);
-                setIsBlurred(true); // Устанавливаем состояние размытия
+                console.error('Error accessing the server:', error);
+                setIsBlurred(true); // Set blur state
             }
         };
 
@@ -59,13 +59,13 @@ const Listening_menu = ({ setError }) => {
             });
 
             const eventSource = new EventSource(`http://localhost:8000/sse_create_session?${params.toString()}`, {
-                withCredentials: true // Убедитесь, что куки передаются при настройке сервером.
+                withCredentials: true // Ensure cookies are passed when configured by the server.
             });
 
             eventSource.onmessage = (event) => {
                 const data = JSON.parse(event.data);
 
-                if (data.status !== 'Нет слов или mp3 трека, попробуй выбрать другой' && data.status !== 'completed') {
+                if (data.status !== 'No lyrics or mp3 track, try choosing another' && data.status !== 'completed') {
                     setLoadingStatus(data.status);
                 } else if (data.status === 'completed') {
                     eventSource.close();
@@ -87,14 +87,14 @@ const Listening_menu = ({ setError }) => {
             };
 
             eventSource.onerror = (error) => {
-                console.error('Ошибка подключения:', error);
-                message.error('Ошибка при получении данных от сервера.');
+                console.error('Connection error:', error);
+                message.error('Error receiving data from the server.');
                 eventSource.close();
                 setLoading(false);
             };
 
         } catch (error) {
-            console.error('Ошибка:', error);
+            console.error('Error:', error);
             message.error('There was an error with your request.');
             setLoading(false);
         }
@@ -102,27 +102,34 @@ const Listening_menu = ({ setError }) => {
 
     return (
         <div
-            className="space-y-20"
+            // className="space-y-20"
             style={{
+                justifyContent: "space-between",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: 'center',
-                justifyContent: 'center',
-                padding: 24,
+                // justifyContent: 'center',
+                // padding: 24,
                 minHeight: 380,
-                filter: isBlurred ? 'blur(2px)' : 'none', // Применяем размытие
-                pointerEvents: isBlurred ? 'none' : 'auto', // Делаем некликабельным
+                filter: isBlurred ? 'blur(2px)' : 'none', // Apply blur
+                pointerEvents: isBlurred ? 'none' : 'auto', // Make non-clickable
             }}
         >
-            <div className="space-y-6" style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexDirection: 'column'
-            }}>
+            <div
+                // className="space-y-6"
+                style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    // borderBottom: "1px solid #ddd"
+                }}>
                 <span style={{
                     display: 'flex',
-                    justifyContent: 'center'
-                }}>Слушай определенный трек</span>
+                    justifyContent: 'center',
+                    marginBottom: '12px',
+                }}>Listen to a specific track</span>
 
                 <div className="space-y-2" style={{
                     display: 'flex',
@@ -131,14 +138,14 @@ const Listening_menu = ({ setError }) => {
                 }}>
                     <Input
                         style={{minWidth: '250px'}}
-                        placeholder="Имя артиста/название группы"
+                        placeholder="Artist name/band name"
                         value={field1}
                         onChange={(e) => handleInputChange('field1', e.target.value)}
                         required
                     />
                     <Input
                         style={{minWidth: '250px'}}
-                        placeholder="Название трека"
+                        placeholder="Track name"
                         value={field2}
                         onChange={(e) => handleInputChange('field2', e.target.value)}
                         required
@@ -149,37 +156,56 @@ const Listening_menu = ({ setError }) => {
                             disabled={isDisabled}
                             style={{
                                 minWidth: '100px',
-                                backgroundColor: isDisabled ? 'grey' : '',
+                                backgroundColor: isDisabled ? 'grey' : 'black',
                                 borderColor: isDisabled ? 'grey' : '',
                                 alignSelf: 'center',
                             }}>
-                        Начать 🎧
+                        Start 🎧
                     </Button>
                 </div>
             </div>
-            <div className="space-y-6" style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexDirection: 'column'
-            }}>
-                <span>Или выбери случайный</span>
-                <Button style={{
-                    minWidth: '70px',
-                    minHeight: '70px',
-                    fontSize: '40px'
-                }}
-                        type="primary"
-                        onClick={handleRandomClick}>
+            <Divider
+                style={{
+                    // margin: '24px 0',
+                    fontWeight: 400,
+                    color: '#b5b5b5'
+            }}>Or</Divider>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexDirection: 'column',
+                    flex: 1,
+                    justifyContent: 'center',
+                }}>
+                <span
+                    style={{
+                        marginBottom: '12px'
+                    }}
+                >Choose a random one</span>
+                <Button
+                    style={{
+                        minWidth: '70px',
+                        minHeight: '70px',
+                        fontSize: '40px',
+                        backgroundColor: "black"
+                    }}
+                    type="primary"
+                    onClick={handleRandomClick}>
                     🎲
                 </Button>
-                {loading && <Spin style={{marginTop: '20px'}}/>}
-                <div style={{
-                    marginTop: '20px',
-                    whiteSpace: 'pre-wrap',
-                }}>{loadingStatus}</div>
+                {loading && <Spin
+                    style={{
+                        marginTop: '20px'
+                    }}/>}
+                <div
+                    style={{
+                        marginTop: '20px',
+                        whiteSpace: 'pre-wrap',
+                    }}>{loadingStatus}</div>
             </div>
         </div>
     );
 };
 
-export default Listening_menu;
+export default ListeningMenu;

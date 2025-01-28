@@ -38,7 +38,7 @@ const MyAudioPlayer = ({ title, artist, albumCover, audioSrc }) => {
             minWidth: '900px',
             top: 90, // Делаем так, чтобы плеер оставался на верху
             zIndex: 5, // Увеличиваем z-index, чтобы плеер был поверх других элементов
-            backgroundColor: 'white' // Добавляем фон для плеера
+            backgroundColor: '#fff3cd' // Добавляем фон для плеера
         }}>
             <img
                 src={albumCover}

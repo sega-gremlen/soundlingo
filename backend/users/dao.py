@@ -14,7 +14,7 @@ class UsersDAO(BaseDAO):
     model = Users
 
     @classmethod
-    async def get_users_sessions(cls) -> list:
+    async def get_all_users_sessions(cls) -> list:
         """ Функция для получения объектов всех пользователей и их сессий """
 
         async with async_sessionmaker() as session:
@@ -25,10 +25,20 @@ class UsersDAO(BaseDAO):
 
             return result
 
+    @classmethod
+    async def get_all_users_nicknames(cls) -> list:
+        """ Функция для получения никнеймов всех существующих пользователей """
+
+        async with async_sessionmaker() as session:
+            querry = select(cls.model.nickname)
+            nicknames = await session.execute(querry)
+            nicknames = nicknames.scalars().all()
+            return nicknames
+
 
 if __name__ == '__main__':
     async def eee():
-        await UsersDAO.get_users_sessions()
+        await UsersDAO.get_all_users_nicknames()
 
-    asyncio.run(eee())
+    print(asyncio.run(eee()))
 

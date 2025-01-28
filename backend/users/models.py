@@ -14,6 +14,6 @@ class Users(Base):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     password: Mapped[str | None] = mapped_column(nullable=True, default=None)
     created_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    nickname: Mapped[str | None] = mapped_column(nullable=True, default=None)
+    nickname: Mapped[str | None] = mapped_column(nullable=False)
     is_verified: Mapped[bool] = mapped_column(nullable=False)
     uuid_email_verifying: Mapped[str | None] = mapped_column(nullable=True, default=None)

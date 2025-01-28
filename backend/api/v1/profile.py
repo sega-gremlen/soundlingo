@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, UTC
 import re
-
+import coolname
 import aiohttp
 
 
@@ -15,7 +15,7 @@ from backend.users.dao import UsersDAO, Users
 from backend.users.exceptions import (PasswordIncorrect,
                                       UserAlreadyExists,
                                       LoginError,
-                                      UserIsNotverified,
+                                      UserIsNotverified, UserNicknameAlreadyExists,
                                       )
 
 from backend.users.schemas import SUserSignup, SUserLogin
@@ -33,6 +33,7 @@ auth_router = APIRouter()
 async def my_profile(user: Users = Depends(get_current_user)):
     response_data = {
         'user_id': user.id,
+        'nickname': user.nickname,
         'sessions': []
     }
 
@@ -93,17 +94,21 @@ async def logout(response: Response):
 
 @auth_router.post("/signup")
 async def signup(response: Response, user: SUserSignup, background_tasks: BackgroundTasks):
-    print('123')
     if not await UsersDAO.find_one_or_none(Users.email == user.email):
-        print('123123')
         if not re.match(r"^(?=.*[A-Z])(?=.*\d)[A-Za-z\d\W_]{8,}$", user.password):
-            print('1233344')
             raise PasswordIncorrect
 
         hashed_password = await get_password_hash(user.password)
         uuid_email_verifying = str(uuid.uuid4())
 
-        print('123')
+        # Проверка и генерация никнейма
+        all_users_nicknames = await UsersDAO.get_all_users_nicknames()
+        if not user.nickname:
+            while not user.nickname and user.nickname in all_users_nicknames:
+                user.nickname = coolname.generate_slug(2)
+        else:
+            if user.nickname in all_users_nicknames:
+                raise UserNicknameAlreadyExists
 
         new_user = await UsersDAO.create(
             email=user.email,

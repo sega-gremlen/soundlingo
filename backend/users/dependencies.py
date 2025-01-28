@@ -124,7 +124,7 @@ async def get_users_points():
 
     Формула подсчета: valid_points * 1 + revealed_points * 0.9
     """
-    all_users_sessions: [(Users, Sessions), ] = await UsersDAO.get_users_sessions()
+    all_users_sessions: [(Users, Sessions), ] = await UsersDAO.get_all_users_sessions()
     all_points_data = {}
     for user, session in all_users_sessions:
         all_points_data[user.nickname] = (all_points_data.setdefault(user.nickname, 0) +

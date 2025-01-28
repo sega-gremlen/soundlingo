@@ -237,11 +237,17 @@ const LyricsFormNew = ({
                             const lyricsStateWords = lyricsStateLines[lyricsStateLineIndex]; // Получаем слова из текущей строки
 
                             return (
-                                <div key={`line-${lyricsStateSectionIndex}-${lyricsStateLineIndex}`}
-                                     style={{display: 'flex'}}>
-                                    <div style={{display: 'flex', marginBottom: '10px'}}>
+                                <div
+                                    key={`line-${lyricsStateSectionIndex}-${lyricsStateLineIndex}`}
+                                    style={{
+                                        display: '' + 'flex'
+                                    }}>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            marginBottom: '10px'
+                                        }}>
                                         {Object.keys(lyricsStateWords).map((lyricsStateWordIndex) => {
-                                            // console.log(lyricsStateWord)
                                             const lyricsStateWord = lyricsStateWords[lyricsStateWordIndex].value; // Получаем объект слова
                                             const lyricsStateWordRevealedStatus = lyricsStateWords[lyricsStateWordIndex].revealed // Подсказано ли слово
                                             const lyricsWord = lyrics[lyricsStateSectionIndex][lyricsSectionTitle][lyricsStateLineIndex][lyricsStateWordIndex].value; // Получаем оригинальное слово для сравнения

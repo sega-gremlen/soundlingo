@@ -44,6 +44,7 @@ class SongsApi:
 
     @classmethod
     async def _split_lyrics(cls, lyrics) -> (list, int):
+        # print(lyrics)
         # Регулярное выражение для поиска частей текста с заголовками и содержимым
         matches = re.findall(r'\[(.*?)](.*?)(?=\[\w|\Z)', lyrics, re.DOTALL)
 
@@ -91,6 +92,7 @@ class SongsApi:
                     '[' in song.lyrics,
                     ']' in song.lyrics,
             )):
+                print(song.lyrics)
                 lyrics = unicodedata.normalize('NFKD', song.lyrics)
                 result = await cls._split_lyrics(lyrics)
                 print(f'Genius - {artist_name} - {song_name} - Слова найдены')
@@ -105,9 +107,15 @@ class SongsApi:
 
     @staticmethod
     async def parse_spotify_song_json(song: dict):
-        bad_words = ['Instrumental', 'demo', 'remaster', '(feat', 'live', 'Symphonicities']
         song_name: str = song['name']
 
+        print(song_name)
+
+        # Замена *Year Remaster* на пустую строку
+        result = re.sub(r" -\s*\d{4}\s*Remaster$", "", song_name, flags=re.IGNORECASE)
+
+        # Замена других ненужных слов
+        bad_words = ['Instrumental', 'demo', 'remaster', '(feat', 'live', 'Symphonicities']
         for word in bad_words:
             if word.lower() in song_name.lower():
                 song_name = song_name[:song_name.lower().index(word.lower())]
@@ -201,8 +209,12 @@ class SongsApi:
 if __name__ == '__main__':
     async def main():
         # print(await SongsApi.parse_spotify_song_json(await SongsApi.get_song('Steve Miller Band', 'Abracadabra')))
-        # pprint.pprint(await SongsApi.get_track_lyrics('Foals', 'Cassius'))
-        pprint.pprint(await SongsApi.download_mp3('sting', 'Englishman In New York'))
+        # pprint.pprint(await SongsApi.get_track_lyrics('Dire Straits', 'water of love'))
+        # await SongsApi.get_track_lyrics('Dire Straits', 'water of love')
+        await SongsApi.get_track_lyrics('Dua Lipa', 'New Rules')
+
+
+        # pprint.pprint(await SongsApi.download_mp3('sting', 'Englishman In New York'))
 
 
     asyncio.run(main())

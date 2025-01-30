@@ -1,20 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Table } from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Table, Pagination} from 'antd';
 
-// Стили для центрирования содержимого
-const centeredCellStyle = {
-    textAlign: 'center',
-    verticalAlign: 'middle',
-    height: '60px' // Фиксированная высота ячейки
-};
-
-function Leaderboard() {
+const Leaderboard = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [columnWidths, setColumnWidths] = useState({
-        position: 100,
-        score: 150
-    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
@@ -22,7 +13,6 @@ function Leaderboard() {
                 const response = await fetch('http://localhost:8000/leaderboard');
                 const result = await response.json();
 
-                // Конвертируем объект в массив
                 const tableData = Object.entries(result).map(
                     ([username, score], index) => ({
                         username,
@@ -31,15 +21,6 @@ function Leaderboard() {
                         key: username,
                     })
                 );
-
-                // Рассчитываем максимальную ширину для колонок
-                const maxPositionWidth = Math.max(...tableData.map(d => `${d.position}`.length)) * 20 + 30;
-                const maxScoreWidth = Math.max(...tableData.map(d => `${d.score}`.length)) * 15 + 30;
-
-                setColumnWidths({
-                    position: maxPositionWidth,
-                    score: maxScoreWidth
-                });
 
                 setData(tableData);
                 setLoading(false);
@@ -57,74 +38,62 @@ function Leaderboard() {
             title: '#',
             dataIndex: 'position',
             key: 'position',
-            width: columnWidths.position,
             align: 'center',
-            render: text => <div style={{
-                ...centeredCellStyle,
-                width: columnWidths.position,
-                fontSize: '30px'
-            }}>{text}</div>,
+            render: text => <div style={{fontSize: '20px'}}>{text}</div>,
         },
         {
             title: 'Nickname',
             dataIndex: 'username',
             key: 'username',
             align: 'center',
-            render: text => <div style={{
-                ...centeredCellStyle,
-                fontSize: '30px'
-            }}>{text}</div>,
+            render: text => <div style={{fontSize: '20px'}}>{text}</div>,
         },
         {
             title: 'Points',
             dataIndex: 'score',
             key: 'score',
-            width: columnWidths.score,
             align: 'center',
-            render: text => <div style={{
-                ...centeredCellStyle,
-                width: columnWidths.score,
-                fontSize: '30px'
-            }}>{text}</div>,
+            render: text => <div style={{fontSize: '20px', fontWeight: 'bold'}}>{text}</div>,
         },
     ];
 
     return (
         <div style={{
-            width: '70%',
-            height: '100%',
-            position: 'relative',
-            padding: "0px",
-            margin: "0px"
+            display: 'flex',
+            flex: 1,
+            flexDirection: 'column',
+            maxWidth: '800px',
+            minWidth: '300px',
+            width: '100%',
+            margin: '0 auto',
+            // textAlign: 'center',
+            alignItems: 'center',
+            // alignContent: 'center'
         }}>
+            <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={data.length}
+                onChange={setCurrentPage}
+                style={{marginBottom: '20px', textAlign: 'center'}}
+            />
+            {/*<h1 style={{ marginBottom: '20px' }}>Leaderboard</h1>*/}
             <Table
                 columns={columns}
-                dataSource={data}
+                dataSource={data.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
                 loading={loading}
-                pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    pageSizeOptions: ['10', '20', '50'],
-                    showTotal: (total, range) => `${range[0]}-${range[1]} из ${total} игроков`,
-                }}
+                pagination={false}
                 bordered
-                scroll={{ y: 'calc(100vh - 180px)' }}
                 style={{
-                    height: '100%',
-                    // overflow: 'auto',
-                }}
-                components={{
-                    body: {
-                        cell: (props) => <td {...props} style={{
-                            ...props.style,
-                            padding: '0',
-                            borderBottom: '1px solid #f0f0f0'
-                        }}/>
-                    }
-                }}
+                    backgroundColor: '#f0f0f0',
+                    borderRadius: '8px',
+                    width: "100%"
+            }}
+                rowClassName={() => 'custom-row'}
             />
+
         </div>
     );
-}
+};
 
 export default Leaderboard;

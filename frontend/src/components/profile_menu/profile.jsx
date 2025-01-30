@@ -50,7 +50,7 @@ const ProfileForm = ({profileData}) => {
                 flexDirection: 'column',
                 alignItems: 'center',
                 position: 'relative',
-                maxWidth: '500px',
+                maxWidth: '800px',
                 minWidth: '300px',
                 width: '100%',
             }}

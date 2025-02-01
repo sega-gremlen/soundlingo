@@ -101,110 +101,110 @@ const ListeningMenu = ({setError}) => {
     };
 
     return (
-        <div
-            // className="space-y-20"
-            style={{
-                justifyContent: "space-between",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: 'center',
-                // justifyContent: 'center',
-                // padding: 24,
-                minHeight: 380,
-                filter: isBlurred ? 'blur(2px)' : 'none', // Apply blur
-                pointerEvents: isBlurred ? 'none' : 'auto', // Make non-clickable
-            }}
-        >
+        <>
             <div
-                // className="space-y-6"
                 style={{
-                    flex: 1,
-                    display: 'flex',
+                    justifyContent: "space-between",
+                    display: "flex",
+                    flexDirection: "column",
                     alignItems: 'center',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    // borderBottom: "1px solid #ddd"
-                }}>
+                    minHeight: 380,
+                    filter: isBlurred ? 'blur(2px)' : 'none', // Apply blur
+                    pointerEvents: isBlurred ? 'none' : 'auto', // Make non-clickable
+                }}
+            >
+                <div
+                    style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                    }}>
                 <span style={{
                     display: 'flex',
                     justifyContent: 'center',
                     marginBottom: '12px',
                 }}>Listen to a specific track</span>
 
-                <div className="space-y-2" style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    flexDirection: 'column'
-                }}>
-                    <Input
-                        style={{minWidth: '250px'}}
-                        placeholder="Artist name/band name"
-                        value={field1}
-                        onChange={(e) => handleInputChange('field1', e.target.value)}
-                        required
-                    />
-                    <Input
-                        style={{minWidth: '250px'}}
-                        placeholder="Track name"
-                        value={field2}
-                        onChange={(e) => handleInputChange('field2', e.target.value)}
-                        required
-                    />
-                    <Button onClick={handleRandomClick}
-                            type="primary"
-                            htmlType="submit"
-                            disabled={isDisabled}
-                            style={{
-                                minWidth: '100px',
-                                backgroundColor: isDisabled ? 'grey' : 'black',
-                                borderColor: isDisabled ? 'grey' : '',
-                                alignSelf: 'center',
-                            }}>
-                        Start 🎧
-                    </Button>
+                    <div className="space-y-2" style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        flexDirection: 'column'
+                    }}>
+                        <Input
+                            style={{minWidth: '250px'}}
+                            placeholder="Artist name/band name"
+                            value={field1}
+                            onChange={(e) => handleInputChange('field1', e.target.value)}
+                            required
+                        />
+                        <Input
+                            style={{minWidth: '250px'}}
+                            placeholder="Track name"
+                            value={field2}
+                            onChange={(e) => handleInputChange('field2', e.target.value)}
+                            required
+                        />
+                        <Button onClick={handleRandomClick}
+                                type="primary"
+                                htmlType="submit"
+                                disabled={isDisabled || loading} // Disable if loading
+                                style={{
+                                    minWidth: '100px',
+                                    backgroundColor: (isDisabled || loading) ? 'grey' : 'black',
+                                    borderColor: (isDisabled || loading) ? 'grey' : '',
+                                    alignSelf: 'center',
+                                }}>
+                            Start 🎧
+                        </Button>
+                    </div>
                 </div>
-            </div>
-            <Divider
-                style={{
-                    // margin: '24px 0',
-                    fontWeight: 400,
-                    color: '#b5b5b5'
-            }}>Or</Divider>
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexDirection: 'column',
-                    flex: 1,
-                    justifyContent: 'center',
-                }}>
+                <Divider
+                    style={{
+                        fontWeight: 400,
+                        color: '#b5b5b5'
+                    }}>Or</Divider>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexDirection: 'column',
+                        flex: 1,
+                        justifyContent: 'center',
+                    }}>
                 <span
                     style={{
                         marginBottom: '12px'
                     }}
                 >Choose a random one</span>
-                <Button
-                    style={{
-                        minWidth: '70px',
-                        minHeight: '70px',
-                        fontSize: '40px',
-                        backgroundColor: "black"
-                    }}
-                    type="primary"
-                    onClick={handleRandomClick}>
-                    🎲
-                </Button>
-                {loading && <Spin
-                    style={{
-                        marginTop: '20px'
-                    }}/>}
-                <div
-                    style={{
-                        marginTop: '20px',
-                        whiteSpace: 'pre-wrap',
-                    }}>{loadingStatus}</div>
+                    <Button
+                        style={{
+                            minWidth: '70px',
+                            minHeight: '70px',
+                            fontSize: '40px',
+                            backgroundColor: loading ? 'grey' : 'black' // Change color if loading
+                        }}
+                        type="primary"
+                        onClick={handleRandomClick}
+                        disabled={loading} // Disable if loading
+                    >
+                        🎲
+                    </Button>
+
+                </div>
             </div>
-        </div>
+
+            {loading && <Spin
+                style={{
+                    marginTop: '20px'
+                }}/>}
+            <div
+                style={{
+                    marginTop: '20px',
+                    whiteSpace: 'pre-wrap',
+                }}>{loadingStatus}</div>
+        </>
     );
 };
 

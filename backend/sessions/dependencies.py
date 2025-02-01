@@ -67,7 +67,8 @@ class SongsApi:
                             # 'filled': False
                         }
                         row_dict[i] = new_word_form
-                        word_count += 1
+                        if word:
+                            word_count += 1
                     song_part[song_part_name][row] = row_dict
 
         # await create_lyrics_state(result)
@@ -92,7 +93,7 @@ class SongsApi:
                     '[' in song.lyrics,
                     ']' in song.lyrics,
             )):
-                print(song.lyrics)
+                # print(song.lyrics)
                 lyrics = unicodedata.normalize('NFKD', song.lyrics)
                 result = await cls._split_lyrics(lyrics)
                 print(f'Genius - {artist_name} - {song_name} - Слова найдены')
@@ -109,7 +110,7 @@ class SongsApi:
     async def parse_spotify_song_json(song: dict):
         song_name: str = song['name']
 
-        print(song_name)
+        # print(song_name)
 
         # Замена *Year Remaster* на пустую строку
         result = re.sub(r" -\s*\d{4}\s*Remaster$", "", song_name, flags=re.IGNORECASE)
@@ -211,7 +212,7 @@ if __name__ == '__main__':
         # print(await SongsApi.parse_spotify_song_json(await SongsApi.get_song('Steve Miller Band', 'Abracadabra')))
         # pprint.pprint(await SongsApi.get_track_lyrics('Dire Straits', 'water of love'))
         # await SongsApi.get_track_lyrics('Dire Straits', 'water of love')
-        await SongsApi.get_track_lyrics('Dua Lipa', 'New Rules')
+        pprint.pprint(await SongsApi.get_track_lyrics('Nirvana', 'Oh me'))
 
 
         # pprint.pprint(await SongsApi.download_mp3('sting', 'Englishman In New York'))

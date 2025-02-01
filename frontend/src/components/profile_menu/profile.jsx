@@ -82,7 +82,7 @@ const ProfileForm = ({profileData}) => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    // justifyContent: 'center', // Раздвигаем элементы по краям
+                    // justifyContent: 'center',
                     alignContent: 'center',
                     justifyItems: 'center',
                 }}

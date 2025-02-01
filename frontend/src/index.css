@@ -2,10 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
+/*:root {*/
+/*    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;*/
+/*    line-height: 1.5;*/
+/*    font-weight: 400;*/
+/*}*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500; /* Средняя насыщенность, как на Genius */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600; /* Более жирный для заголовков */
 }
 
 

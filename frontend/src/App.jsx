@@ -6,7 +6,7 @@ import MyProfile from "./components/profile_menu/menu_profile.jsx";
 import About from "./components/about_menu/about.jsx";
 import Session from "./components/listening_menu/session.jsx";
 import Signup_test from "./components/profile_menu/signup.jsx";
-import Leaderbord from "./components/leaderbord_menu/leaderbord.jsx"
+import Leaderbord from "./components/leaderbord_menu/leaderbord.jsx";
 
 const App = () => {
     const {Header, Content, Footer} = Layout;
@@ -18,13 +18,12 @@ const App = () => {
 
         const getInitialActiveTab = () => {
             switch (location.pathname) {
-
                 case '/signup':
                     return '1';
                 case '/profile':
                     return '1';
                 case '/leaderboard':
-                    return '2'
+                    return '2';
                 case '/':
                     return '3';
                 default:
@@ -36,7 +35,7 @@ const App = () => {
 
         const [activeTab, setActiveTab] = useState(getInitialActiveTab());
         const [hoveredKey, setHoveredKey] = useState(null);
-        const [error, setError] = useState(null); // Состояние для ошибок
+        const [error, setError] = useState(null);
 
         useEffect(() => {
             setActiveTab(getInitialActiveTab());
@@ -65,17 +64,22 @@ const App = () => {
         };
 
         const commonStyle = {
-            color: 'white',
+            color: 'black',
             flex: 1,
-            transition: 'background-color 0.3s ease',
+            transition: 'border-color 0.3s ease, background-color 0.3s ease',
+            border: '2px solid transparent',
+            fontFamily: 'Inter, sans-serif', // Применяем шрифт Inter
+            fontWeight: 500, // Средняя насыщенность
         };
 
         const activeStyle = {
-            backgroundColor: '#F0BB78',
+
+            border: '4px solid black', // Черная рамка для активной вкладки
         };
 
         const hoverStyle = {
-            backgroundColor: '#543A14',
+            position: "reveal",
+            border: '3px solid rgba(0, 0, 0, 0.2)', // Еле заметная серая рамка при наведении
         };
 
         const menuItems = menuLabels.map((label, index) => ({
@@ -87,7 +91,7 @@ const App = () => {
 
         return (
             <Layout style={{
-                minHeight: '100vh', // Занимает всю высоту экрана
+                minHeight: '100vh',
                 display: 'flex',
                 flexDirection: 'column'
             }}>
@@ -98,7 +102,16 @@ const App = () => {
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        backgroundColor: '#131010',
+                        backgroundColor: '#EDD238',
+
+                        padding: 0, // Убираем отступы по краям
+                        // backgroundColor: "#FFD700", // Желтый фон
+                        fontSize: "14px", // Размер шрифта
+                        // textTransform: "uppercase", // Заглавные буквы
+                        letterSpacing: "2px", // Узкий кернинг (межбуквенный интервал)
+                        fontFamily: "Arial, sans-serif", // Шрифт
+                        // display: "flex",
+                        justifyContent: "center",
                     }}
                 >
                     {menuItems.map((item) => (
@@ -110,12 +123,13 @@ const App = () => {
                             style={{
                                 ...item.style,
                                 ...(activeTab === item.key ? item.activeStyle : {}),
-                                ...(hoveredKey === item.key ? hoverStyle : {}),
+                                ...(hoveredKey === item.key && activeTab !== item.key ? hoverStyle : {}), // hover не применяется к активной вкладке
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 height: '100%',
+                                flex: 1, // Растягиваем вкладки на всю ширину
                             }}
                         >
                             {item.label}
@@ -125,14 +139,9 @@ const App = () => {
                 <Content
                     style={{
                         display: 'flex',
-                        // alignItems: "center",
-                        // justifyContent: "center",
-                        // padding: '24px 12px',
                         flexDirection: "column",
-                        // width: '100%',
-                        // height: '100%',
-                        // textAlign: 'center',
-                        backgroundColor: "#fffaf7"
+                        // backgroundColor: "#ffffff"
+                        backgroundColor: 'linear-gradient(to bottom, #EDD238, #ffffff)',
                     }}
                 >
                     <div style={{
@@ -141,8 +150,7 @@ const App = () => {
                         {error && (
                             <div style={{
                                 position: "absolute",
-                                bottom: '102%', // Позиционируем от нижней границы
-                                // transform: 'translateY(-100%)', // Смещаем его вверх на свою
+                                bottom: '102%',
                                 backgroundColor: '#fff3cd',
                                 color: '#856404',
                                 padding: '10px 15px',
@@ -160,8 +168,8 @@ const App = () => {
                             alignItems: 'center',
                             display: 'flex',
                             justifyContent: 'center',
-                            background: '#fffaf7',
-                            // borderRadius: borderRadiusLG,
+                            background: '#ffffff',
+                            // backgroundColor: 'rgb(250,237,172)',
                         }}>
                             <Routes>
                                 <Route path="/" element={<Listening_menu setError={setError}/>}/>
@@ -169,32 +177,30 @@ const App = () => {
                                 <Route path="/leaderboard" element={<Leaderbord setError={setError}/>}/>
                                 <Route path="/about" element={<About setError={setError}/>}/>
                                 <Route path="/session/:sessionId" element={<Session setError={setError}/>}/>
-                                {/*<Route path="/signup" element={<Register setError={setError}/>}/>*/}
                                 <Route path="/signup" element={<Signup_test setError={setError}/>}/>
-
                             </Routes>
                         </div>
                     </div>
-
                 </Content>
                 <Footer
                     style={{
                         textAlign: 'center',
-                        marginTop: 'auto', // Прижимает футер к низу
+                        marginTop: 'auto',
                         backgroundColor: '#131010'
                     }}
                 >
                     <p
-                    style={{
-                        color: "white"
-                    }}>
+                        style={{
+                            color: "white",
+                            fontFamily: 'Inter, sans-serif', // Применяем шрифт Inter
+                        }}>
                         Created by <a
                         style={{
-                            color: '#7fa6bf'
+                            color: '#7fa6bf',
+                            fontFamily: 'Inter, sans-serif', // Применяем шрифт Inter
                         }}
                         href="https://github.com/sega-gremlen">@sega-gremlen</a>
                     </p>
-
                 </Footer>
             </Layout>
         );

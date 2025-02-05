@@ -16,6 +16,6 @@ backend/Notes
 backend/migrations
 *.venv/
 
-*frontend/public/
+
 *frontend/node_modules/
 frontend/.env

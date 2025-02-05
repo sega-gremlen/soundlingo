@@ -101,26 +101,29 @@ const ListeningMenu = ({setError}) => {
     };
 
     return (
-        <>
+        <div style={{
+            display: "flex",
+            height: "100%",
+            width: "100%",
+            position: "absolute",
+            alignItems: "center",
+            justifyItems: "center",
+            alignContent: "center",
+            justifyContent: "center"
+        }}>
             <div
                 style={{
                     justifyContent: "space-between",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: 'center',
-                    minHeight: 380,
+                    minHeight: 340,
                     filter: isBlurred ? 'blur(2px)' : 'none', // Apply blur
                     pointerEvents: isBlurred ? 'none' : 'auto', // Make non-clickable
+                    position: "relative",
                 }}
             >
-                <div
-                    style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                    }}>
+                <div>
                 <span style={{
                     display: 'flex',
                     justifyContent: 'center',
@@ -134,14 +137,14 @@ const ListeningMenu = ({setError}) => {
                     }}>
                         <Input
                             style={{minWidth: '250px'}}
-                            placeholder="Artist name/band name"
+                            placeholder="Artist name/band title"
                             value={field1}
                             onChange={(e) => handleInputChange('field1', e.target.value)}
                             required
                         />
                         <Input
                             style={{minWidth: '250px'}}
-                            placeholder="Track name"
+                            placeholder="Track title"
                             value={field2}
                             onChange={(e) => handleInputChange('field2', e.target.value)}
                             required
@@ -170,7 +173,6 @@ const ListeningMenu = ({setError}) => {
                         display: 'flex',
                         alignItems: 'center',
                         flexDirection: 'column',
-                        flex: 1,
                         justifyContent: 'center',
                     }}>
                 <span
@@ -191,20 +193,42 @@ const ListeningMenu = ({setError}) => {
                     >
                         🎲
                     </Button>
-
                 </div>
             </div>
 
-            {loading && <Spin
-                style={{
-                    marginTop: '20px'
-                }}/>}
-            <div
-                style={{
-                    marginTop: '20px',
-                    whiteSpace: 'pre-wrap',
-                }}>{loadingStatus}</div>
-        </>
+            <div style={{
+                position: "absolute",
+
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                textAlign: "center",
+
+                top: "72%",
+                left: "50%",
+                transform: "translateX(-50%)",
+            }}
+            >
+                {/* Спин */}
+                <div style={{}}>
+                    {
+                        loading
+                        && (
+                            <Spin/>
+                        )}
+                </div>
+
+                {/* Статус зарузки сессии */}
+                <div
+                    style={{
+                        textAlign: "center",
+                        whiteSpace: "pre-wrap",
+                    }}>
+                    {loadingStatus}
+                </div>
+            </div>
+
+        </div>
     );
 };
 

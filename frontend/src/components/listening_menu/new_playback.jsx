@@ -4,7 +4,7 @@ import WaveSurfer from "wavesurfer.js";
 const formWaveSurferOptions = (ref) => ({
     container: ref,
     waveColor: "#eee",
-    progressColor: "rgba(50,50,50,0.5)",
+    progressColor: "rgb(0,0,0)",
     cursorColor: "Black",
     barWidth: 3,
     barRadius: 1,
@@ -93,7 +93,7 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                 position: 'sticky',
                 top: 15,
                 zIndex: 5,
-                backgroundColor: '#fffaf7',
+                backgroundColor: '#ffffff',
                 margin: 0,
                 padding: 0,
             }}>
@@ -172,7 +172,7 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                     position: 'sticky',
                     top: 74,
                     zIndex: 5,
-                    backgroundColor: '#fffaf7',
+                    backgroundColor: '#ffffff',
                     display: "flex",
                     flexDirection: "column",
                     // maxWidth: "50%",

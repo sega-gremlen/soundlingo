@@ -53,6 +53,7 @@ const ProfileForm = ({profileData}) => {
                 maxWidth: '800px',
                 minWidth: '300px',
                 width: '100%',
+                marginTop: '10px'
             }}
         >
             <div style={{
@@ -73,7 +74,11 @@ const ProfileForm = ({profileData}) => {
                 </div>
 
 
-                <Button onClick={handleLogout}>Log out</Button>
+                <Button
+                    onClick={handleLogout}
+                    style={{
+                    }}
+                >Log out</Button>
             </div>
 
             <div

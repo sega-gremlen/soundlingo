@@ -60,22 +60,22 @@ const Leaderboard = () => {
     return (
         <div style={{
             display: 'flex',
-            flex: 1,
             flexDirection: 'column',
             maxWidth: '800px',
             minWidth: '300px',
             width: '100%',
             margin: '0 auto',
-            // textAlign: 'center',
             alignItems: 'center',
-            // alignContent: 'center'
+            height: "100%",
+            position: "absolute",
+            marginTop: "10px",
         }}>
             <Pagination
                 current={currentPage}
                 pageSize={pageSize}
                 total={data.length}
                 onChange={setCurrentPage}
-                style={{marginBottom: '20px', textAlign: 'center'}}
+                style={{marginBottom: '10px', textAlign: 'center'}}
             />
             {/*<h1 style={{ marginBottom: '20px' }}>Leaderboard</h1>*/}
             <Table

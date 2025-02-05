@@ -9,39 +9,20 @@
 /*}*/
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 body {
   font-family: 'Inter', sans-serif;
-  font-weight: 500; /* Средняя насыщенность, как на Genius */
+  font-weight: 400; /* Средняя насыщенность, как на Genius */
 }
-
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600; /* Более жирный для заголовков */
+  font-weight: 700; /* Более жирный для заголовков */
 }
 
-
-linearGradientButton {
-    border-width: 0;
-
-    > span {
-        position: relative;
-    }
-
-    &::before {
-        content: '';
-        background: linear-gradient(135deg, #6253e1, #04befe);
-        position: absolute;
-        inset: 0;
-        opacity: 1;
-        transition: all 0.3s;
-        border-radius: inherit;
-    }
-
-    &:hover::before {
-        opacity: 0;
-    }
+/* Глобальное изменение цвета спиннера */
+.ant-spin-dot-item {
+  background-color: #000000 !important; /* Красный цвет */
 }
 
+/* Изменение цвета ползунка громкости*/
 input[type="range"] {
   accent-color: #000000;
 }

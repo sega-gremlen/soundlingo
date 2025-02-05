@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Spin, Modal } from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Spin, Modal} from 'antd';
 import ProfileForm from './profile.jsx';
-import { useLocation, useNavigate } from "react-router-dom";
+import {useLocation, useNavigate} from "react-router-dom";
 import LoginTest from "./login.jsx";
 
-const MyProfile = ({ setError }) => {
+const MyProfile = ({setError}) => {
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isUnauthorized, setIsUnauthorized] = useState(false);
@@ -17,14 +17,14 @@ const MyProfile = ({ setError }) => {
         const emailVerified = searchParams.get('email_verified');
 
         if (emailVerified === 'true') {
-            navigate('/profile', { replace: true });
+            navigate('/profile', {replace: true});
             Modal.success({
                 title: 'Email подтвержден',
                 content: 'Email успешно подтвержден! Теперь вы можете пользоваться всеми функциями.',
-                onOk: () => navigate('/profile', { replace: true }) // Перенаправляем после закрытия модального окна
+                onOk: () => navigate('/profile', {replace: true}) // Перенаправляем после закрытия модального окна
             });
         } else if (emailVerified === 'false') {
-            navigate('/profile', { replace: true });
+            navigate('/profile', {replace: true});
             Modal.error({
                 title: 'Ошибка',
                 content: 'Пользователь не существует.',
@@ -74,14 +74,27 @@ const MyProfile = ({ setError }) => {
     }, [setError]);
 
     if (loading) {
-        return <Spin size="large" />;
+        return <div style={{
+            display: "flex",
+            height: "100%",
+            width: "100%",
+            position: "absolute",
+            alignItems: "center",
+            justifyItems: "center",
+            alignContent: "center",
+            justifyContent: "center"
+        }}>
+
+            <Spin size="large"/>
+        </div>;
+
     }
 
     if (isUnauthorized) {
-        return <LoginTest setError={setError} />;
+        return <LoginTest setError={setError}/>;
     }
 
-    return <ProfileForm profileData={profileData} />; // Передаем объект профиля
+    return <ProfileForm profileData={profileData}/>; // Передаем объект профиля
 };
 
 export default MyProfile;

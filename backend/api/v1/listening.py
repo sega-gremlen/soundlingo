@@ -146,46 +146,57 @@ async def sse_create_session(user: Users = Depends(get_current_user),
             rq_title=rq_song_name
         )
 
-        yield await sse_resp_wrapper("Начинаю поиск трека...")
+        yield await sse_resp_wrapper("Starting track search...")
 
         print(f'rq_artist_name: {rq_artist_name}\nrq_song_name: {rq_song_name}')
 
         while not mp3_file_name or not mp3_file_path or not lyrics:
             song = await SongsApi.get_song(artist_name=rq_artist_name, song_name=rq_song_name)
             if not song and not rq_song_name:
-                yield await sse_resp_wrapper("Неудачная попытка найти трек, еще одна попытка...")
-                continue
+                # yield await sse_resp_wrapper("Failed to find the track, trying again...")
+                yield await sse_resp_wrapper("No tracks with this artist name or band title")
+                raise TrackNotFoundError
+                # continue
             elif not song and rq_song_name:
-                yield await sse_resp_wrapper("Нет существует такого трека")
+                yield await sse_resp_wrapper("No such track exists")
                 raise TrackNotFoundError
 
             artist_name, song_name, album_cover_url = await SongsApi.parse_spotify_song_json(song)
-            yield await sse_resp_wrapper(f"Нашли трек {artist_name} - {song_name}")
 
             existing_track: Tracks | None = await TracksDAO.find_one_or_none(
                 Tracks.artist_name == artist_name,
                 Tracks.title == song_name)
 
             if existing_track:
-                print('Взято из кэша')
+                print('Retrieved from cache')
                 lyrics = json.loads(existing_track.lyrics)['lyrics']
                 mp3_s3_url = existing_track.mp3_url
-                yield await sse_resp_wrapper("Готово!")
                 break
+
+            yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+                                         f"Finding lyrics...")
 
             lyrics, word_count = await SongsApi.get_track_lyrics(artist_name, song_name)
             if not lyrics and not rq_song_name:
-                yield await sse_resp_wrapper("Неудачная попытка найти слова, пробую другой трек...")
+                yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+                                             f"Failed to find lyrics, trying another one...")
                 continue
+
+            yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+                                         f"Finding mp3 source...")
 
             mp3_file_name, mp3_file_path = await SongsApi.download_mp3(artist_name, song_name)
             if not mp3_file_name and not mp3_file_path and not rq_song_name:
-                yield await sse_resp_wrapper("Неудачная попытка загрузки трека, пробую другой трек...")
+                yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+                                             f"Failed to download the track, trying another one...")
                 continue
 
             if (not mp3_file_name or not mp3_file_path or not lyrics) and rq_song_name:
-                yield await sse_resp_wrapper("Нет слов или mp3 трека, попробуй выбрать другой")
+                yield await sse_resp_wrapper("No lyrics or MP3 track available, please try another one")
                 raise LyricsOrSourceNotAvailableError
+
+        yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+                                     f"Session is ready, final preparations...")
 
         # Устанавливаем успешный статус реквесту
         await SessionRequestsDAO.patch(session_request, success=True)

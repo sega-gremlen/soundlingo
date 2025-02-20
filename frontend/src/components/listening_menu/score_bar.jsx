@@ -1,8 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import './score_bar.css';
 
-const ScoreBar = ({ points }) => {
+const ScoreBar = ({points}) => {
     const totalPoints = points.all_points;
     const totalValidRevealed = points.valid_points + points.revealed_points;
 
@@ -20,46 +19,47 @@ const ScoreBar = ({ points }) => {
         // Предполагаем, что каждый символ требует примерно 7% ширины сегмента
         const minWidthRequired = valueLength * 1;
         return segmentWidth >= minWidthRequired ? (
-            <span className="segment-text">{value}</span>
+            <span>{value}</span>
         ) : null;
     };
 
     return (
-        <div className="score-bar" style={{
-            display: "flex",
-            height: "15px",
-            width: "100%",
-            position: "sticky",
-            top: "0px",
-            zIndex: "5",
-            overflow: "hidden",
-        }}>
+        <div
+            style={{
+                display: "flex",
+                height: "15px",
+                width: "100%",
+                position: "sticky",
+                top: "0px",
+                zIndex: "5",
+                overflow: "hidden",
+            }}>
             <div
-                className="score-bar-segment valid"
                 style={{
                     width: `${validPercentage}%`,
                     display: "flex",
                     alignItems: 'center',
                     justifyContent: "center",
+                    backgroundColor: "rgb(131, 255, 131)"
                 }}
             >
                 {renderText(validPercentage, points.valid_points)}
             </div>
             <div
-                className="score-bar-segment revealed"
                 style={{
                     width: `${revealedPercentage}%`,
                     display: "flex",
                     alignItems: 'center',
                     justifyContent: "center",
+                    backgroundColor: "#ffe19a"
                 }}
             >
                 {renderText(revealedPercentage, points.revealed_points)}
             </div>
             {remainingPercentage > 0 && (
                 <div
-                    className="score-bar-segment remaining"
                     style={{
+                        backgroundColor: "rgb(250, 151, 151)",
                         width: `${remainingPercentage}%`,
                         display: "flex",
                         alignItems: 'center',

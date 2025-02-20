@@ -1,9 +1,10 @@
 import {useState, useEffect, useRef} from 'react';
 import {useLocation, useParams} from 'react-router-dom';
-import MyNewAudioPlayer from './new_playback.jsx'
-import LyricsformNew from "./lyricsform_new.jsx";
-import {Button, Layout, Spin} from "antd";
+import MyNewAudioPlayer from './player.jsx'
+import LyricsformNew from "./lyricsform.jsx";
+import {Spin} from "antd";
 import ScoreBar from './score_bar.jsx';
+import MyNewAudioPlayerTestNew from "./player_test_new.jsx";
 
 const Session = ({setError}) => {
     const location = useLocation();
@@ -88,61 +89,92 @@ const Session = ({setError}) => {
     }, [sessionId]);
 
     if (!sessionData) {
-        return <Spin size="large"/>;
+        return <div
+            style={{
+                display: "flex",
+                height: "100%",
+                width: "100%",
+                position: "absolute",
+                alignItems: "center",
+                justifyItems: "center",
+                alignContent: "center",
+                justifyContent: "center"
+            }}
+        ><Spin size="large"/>
+        </div>;
+
     }
 
-    const {lyrics, album_cover_url, artist_name, song_title, mp3_url, lyrics_state} = sessionData;
+    const {
+        lyrics,
+        album_cover_url,
+        artist_name,
+        song_title,
+        mp3_url,
+        lyrics_state,
+        peaks,
+        duration} = sessionData;
 
     return (
-            <div
+        <div
+            style={{
+                display: "flex",
+                flexDirection: 'column',
+                alignItems: "center",
+                position: 'relative',
+                width: '100%',
+            }}
+        >
+            <ScoreBar points={points}/>
+
+            {/*<MyNewAudioPlayer*/}
+            {/*    albumCover={album_cover_url}*/}
+            {/*    artist={artist_name}*/}
+            {/*    title={song_title}*/}
+            {/*    audioSrc={mp3_url}*/}
+            {/*    revealModeHandler={revealModeHandler}*/}
+            {/*/>*/}
+
+            <MyNewAudioPlayerTestNew
+                albumCover={album_cover_url}
+                artist={artist_name}
+                title={song_title}
+                audioSrc={mp3_url}
+                revealModeHandler={revealModeHandler}
+                peaks={peaks}
+                duration={duration}
+            />
+
+            <LyricsformNew
                 style={{
-                    display: "flex",
-                    flexDirection: 'column',
-                    alignItems: "center",
-                    position: 'relative',
-                    width: '100%',
+                    marginTop: 30,
+                    display: 'flex',
                 }}
-            >
-                <ScoreBar points={points}/>
+                lyrics={lyrics}
+                socket={socket}
+                lyricsState={lyrics_state}
+                setIsRevealMode={setIsRevealMode}
+                isRevealMode={isRevealMode}
+                setHighlightIncorrect={setHighlightIncorrect}
 
-                <MyNewAudioPlayer
-                    albumCover={album_cover_url}
-                    artist={artist_name}
-                    title={song_title}
-                    audioSrc={mp3_url}
-                    revealModeHandler={revealModeHandler}
-                />
+            />
 
-                <LyricsformNew
-                    style={{
-                        marginTop: 30,
-                        display: 'flex',
-                    }}
-                    lyrics={lyrics}
-                    socket={socket}
-                    lyricsState={lyrics_state}
-                    setIsRevealMode={setIsRevealMode}
-                    isRevealMode={isRevealMode}
-                    setHighlightIncorrect={setHighlightIncorrect}
-
-                />
-
-                {/* Очки в правой части экрана */}
-                {/*<div*/}
-                {/*    style={{*/}
-                {/*        position: 'fixed',*/}
-                {/*        top: 150,*/}
-                {/*        right: 100,*/}
-                {/*        textAlign: 'right',*/}
-                {/*        fontSize: '22px',*/}
-                {/*        color: 'gray'*/}
-                {/*    }}*/}
-                {/*>*/}
-                {/*    <div style={{color: 'gray'}}>All Points: {points.all_points}</div>*/}
-                {/*    <div style={{color: 'green'}}>Valid Points: {points.valid_points}</div>*/}
-                {/*    <div style={{color: 'orange'}}>Revealed Points: {points.revealed_points}</div>*/}
-                {/*</div>*/}
-            </div>
+            {/* Очки в правой части экрана */}
+            {/*<div*/}
+            {/*    style={{*/}
+            {/*        position: 'fixed',*/}
+            {/*        top: 150,*/}
+            {/*        right: 100,*/}
+            {/*        textAlign: 'right',*/}
+            {/*        fontSize: '22px',*/}
+            {/*        color: 'gray'*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*    <div style={{color: 'gray'}}>All Points: {points.all_points}</div>*/}
+            {/*    <div style={{color: 'green'}}>Valid Points: {points.valid_points}</div>*/}
+            {/*    <div style={{color: 'orange'}}>Revealed Points: {points.revealed_points}</div>*/}
+            {/*</div>*/}
+        </div>
     );
 };
 

@@ -1,18 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
+import {Progress} from 'antd';
 import WaveSurfer from "wavesurfer.js";
-
-const formWaveSurferOptions = (ref) => ({
-    container: ref,
-    waveColor: "#eee",
-    progressColor: "rgb(0,0,0)",
-    cursorColor: "Black",
-    barWidth: 3,
-    barRadius: 1,
-    responsive: true,
-    height: 50,
-    normalize: true,
-    partialRender: true,
-});
 
 const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -20,26 +8,62 @@ const formatTime = (seconds) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, revealModeHandler}) {
+export default function MyNewAudioPlayerTestNew({title, artist, albumCover, audioSrc, revealModeHandler, peaks, duration}) {
     const waveformRef = useRef(null);
     const wavesurfer = useRef(null);
     const [playing, setPlay] = useState(false);
     const [volume, setVolume] = useState(0.5);
     const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
+    // const [duration, setDuration] = useState(0);
+    const [isLoading, setIsLoading] = useState(true); // Добавляем состояние загрузки
+    const [loadingProgress, setLoadingProgress] = useState(0); // Прогресс загрузки
+
+    const formWaveSurferOptions = (ref) => ({
+        container: ref,
+        waveColor: "#eee",
+        progressColor: "rgb(0,0,0)",
+        cursorColor: "Black",
+        barWidth: 3,
+        barRadius: 1,
+        responsive: true,
+        height: 50,
+        normalize: true,
+        partialRender: true,
+        backend: 'MediaElement',
+        mediaControls: false,
+        url: audioSrc,
+        peaks: [peaks,],
+        duration: duration,
+    });
+
+    // const ProgressBarWithPercentage = ({percent}) => {
+    //     return (
+    //         <Progress
+    //             percent={percent} // Текущий прогресс
+    //             strokeColor={{
+    //                 '0%': '#108ee9',
+    //                 '100%': '#87d068',
+    //             }}
+    //             format={(percent) => `${percent}%`} // Отображение процентов
+    //         />
+    //     );
+    // };
 
     useEffect(() => {
         setPlay(false);
+        setIsLoading(true);
+        setLoadingProgress(0);
 
         const options = formWaveSurferOptions(waveformRef.current);
         wavesurfer.current = WaveSurfer.create(options);
 
-        wavesurfer.current.load(audioSrc);
+        // wavesurfer.current.load(audioSrc);
 
         wavesurfer.current.on("ready", () => {
             if (wavesurfer.current) {
-                setDuration(wavesurfer.current.getDuration());
+                // setDuration(wavesurfer.current.getDuration());
                 wavesurfer.current.setVolume(volume);
+                setIsLoading(false);
             }
         });
 
@@ -55,6 +79,13 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
             if (wavesurfer.current) {
                 setCurrentTime(wavesurfer.current.getCurrentTime());
             }
+        });
+
+        // Спин на загрузку
+        wavesurfer.current.on("loading", (percent) => {
+            console.log(`Loading: ${percent}%`);
+            setLoadingProgress(percent); // Обновляем прогресс загрузки
+
         });
 
         // Используем setInterval для обновления времени при перемещении курсора
@@ -97,13 +128,43 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                 margin: 0,
                 padding: 0,
             }}>
-                {/* Вейвформа */}
-                <div
-                    style={{
-                        height: "50px"
-                    }}
-                    id="waveform"
-                    ref={waveformRef}/>
+                {/* Контейнер для waveform и прогресс-бара */}
+                <div style={{position: 'relative', height: '50px'}}>
+                    {/* Вейвформа (всегда в DOM) */}
+                    <div
+                        style={{height: "50px"}}
+                        id="waveform"
+                        ref={waveformRef}
+                    />
+
+                    {/*/!* Прогресс-бар поверх waveform *!/*/}
+                    {/*{isLoading && (*/}
+                    {/*    <div style={{*/}
+                    {/*        width: '100px',*/}
+                    {/*        position: 'absolute',*/}
+                    {/*        top: 0,*/}
+                    {/*        left: 0,*/}
+                    {/*        right: 0,*/}
+                    {/*        bottom: 0,*/}
+                    {/*        display: 'flex',*/}
+                    {/*        alignItems: 'center',*/}
+                    {/*        textAlign: "center",*/}
+                    {/*        alignContent: "center",*/}
+                    {/*        justifyItems: "center",*/}
+                    {/*        justifyContent: 'center',*/}
+                    {/*        backgroundColor: 'white' // Фон, чтобы скрыть waveform*/}
+                    {/*    }}>*/}
+                    {/*        <Progress*/}
+                    {/*            percent={loadingProgress}*/}
+                    {/*            strokeColor={{*/}
+                    {/*                '0%': '#108ee9',*/}
+                    {/*                '100%': '#87d068',*/}
+                    {/*            }}*/}
+                    {/*            format={(percent) => `${percent}%`}*/}
+                    {/*        />*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
+                </div>
 
                 {/* Текущее время */}
                 <div
@@ -199,11 +260,25 @@ export default function MyNewAudioPlayer({title, artist, albumCover, audioSrc, r
                             src={albumCover}
                             alt={title}
                         />
-                        <div style={{alignItems: "center", justifyItems: "center"}}>
+                        <div style={{
+                            alignItems: "center",
+                            justifyItems: "center",
+                            maxWidth: "280px"
+                        }}>
                             {/* Название трека */}
-                            <h3 style={{fontSize: "18px", fontWeight: "bold"}}>{title}</h3>
+                            <h3 style={{
+                                fontSize: "18px",
+                                fontWeight: "bold",
+                                // whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}>{title}</h3>
                             {/* Имя артиста */}
-                            <p style={{fontSize: "16px"}}>{artist}</p>
+                            <p style={{
+                                fontSize: "16px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}>{artist}</p>
                         </div>
                     </div>
 

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Identity, JSON
+from sqlalchemy import Identity, JSON, Integer
 
 from backend.dao.creator import Base
 
@@ -14,3 +14,9 @@ class Tracks(Base):
     mp3_url: Mapped[str] = mapped_column(nullable=False)
     album_cover_url: Mapped[str] = mapped_column(nullable=False)
     word_count: Mapped[int] = mapped_column(nullable=False)
+    spotify_id: Mapped[str] = mapped_column()
+    spotify_url: Mapped[str] = mapped_column()
+    genius_url: Mapped[str] = mapped_column()
+    youtube_url: Mapped[str] = mapped_column()
+    peaks: Mapped[list] = mapped_column(JSON)
+    duration: Mapped[int] = mapped_column(Integer, nullable=False)

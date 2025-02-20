@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from backend.config import settings
 from backend.lyrics_states.models import LyricsStates
 
-from backend.sessions.dependencies import SongsApi, take_selector_type, sse_resp_wrapper
+from backend.sessions.dependencies import SongsApi, sse_resp_wrapper
 from backend.sessions.exceptions import TrackNotFoundError, LyricsOrSourceNotAvailableError, SessionFoundError
 from backend.sessions.models import Sessions
 from backend.sessions.schemas import SSessionCreate
@@ -69,6 +69,8 @@ async def get_session(user: Users = Depends(get_current_user), session_id: int =
                 "song_title": track_data.title,
                 "album_cover_url": track_data.album_cover_url,
                 "mp3_url": track_data.mp3_url,
+                "peaks": json.loads(track_data.peaks),
+                "duration": track_data.duration,
             }
         else:
             raise SessionFoundError
@@ -129,14 +131,29 @@ async def sse_create_session(user: Users = Depends(get_current_user),
                              rq_song_name: str = Query(...)):
     async def event_generator():
         existing_track = None
-        mp3_file_name = None
-        mp3_file_path = None
-        lyrics = None
-        artist_name = None
-        song_name = None
-        album_cover_url = None
         mp3_s3_url = None
-        word_count = None
+        spotify_data = {
+            'song_title': None,
+            'artist_name': None,
+            'spotify_id': None,
+            'url': None,
+            'album_cover_url': None,
+        }
+        genius_data = {
+            'lyrics': None,
+            'word_count': None,
+            'url': None
+        }
+        # ym_data = {
+        #     'file_name': None,
+        #     'file_path': None,
+        #     'url': None,
+        # }
+        youtube_data = {
+            'file_name': None,
+            'file_path': None,
+            'url': None,
+        }
 
         # Создаём запрос пользователя
         session_request: SessionRequests = await SessionRequestsDAO.create(
@@ -150,75 +167,104 @@ async def sse_create_session(user: Users = Depends(get_current_user),
 
         print(f'rq_artist_name: {rq_artist_name}\nrq_song_name: {rq_song_name}')
 
-        while not mp3_file_name or not mp3_file_path or not lyrics:
+        # while not ym_data['file_name'] or not ym_data['file_path'] or not genius_data['lyrics']:
+        while not youtube_data['file_name'] or not youtube_data['file_path'] or not genius_data['lyrics']:
             song = await SongsApi.get_song(artist_name=rq_artist_name, song_name=rq_song_name)
             if not song and not rq_song_name:
-                # yield await sse_resp_wrapper("Failed to find the track, trying again...")
                 yield await sse_resp_wrapper("No tracks with this artist name or band title")
                 raise TrackNotFoundError
-                # continue
             elif not song and rq_song_name:
                 yield await sse_resp_wrapper("No such track exists")
                 raise TrackNotFoundError
 
-            artist_name, song_name, album_cover_url = await SongsApi.parse_spotify_song_json(song)
+            spotify_data = await SongsApi.parse_spotify_song_json(song)
 
             existing_track: Tracks | None = await TracksDAO.find_one_or_none(
-                Tracks.artist_name == artist_name,
-                Tracks.title == song_name)
+                Tracks.spotify_id == spotify_data['spotify_id'])
 
             if existing_track:
                 print('Retrieved from cache')
-                lyrics = json.loads(existing_track.lyrics)['lyrics']
-                mp3_s3_url = existing_track.mp3_url
+                # lyrics = json.loads(existing_track.lyrics)['lyrics']
+                # mp3_s3_url = existing_track.mp3_url
                 break
 
-            yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
-                                         f"Finding lyrics...")
+            yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
+                                         f"Looking for lyrics...")
 
-            lyrics, word_count = await SongsApi.get_track_lyrics(artist_name, song_name)
-            if not lyrics and not rq_song_name:
-                yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
-                                             f"Failed to find lyrics, trying another one...")
+            genius_data = await SongsApi.get_track_lyrics(spotify_data['artist_name'],
+                                                          spotify_data['song_title'],
+                                                          rq_artist_name,
+                                                          rq_song_name)
+            if not genius_data['lyrics'] and not rq_song_name:
+                yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
+                                             f"Failed to find lyrics, trying another one track...")
                 continue
 
-            yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
-                                         f"Finding mp3 source...")
+            yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
+                                         f"Looking for mp3 source...")
 
-            mp3_file_name, mp3_file_path = await SongsApi.download_mp3(artist_name, song_name)
-            if not mp3_file_name and not mp3_file_path and not rq_song_name:
-                yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
-                                             f"Failed to download the track, trying another one...")
+            # ym_data = await SongsApi.get_mp3_from_ym(spotify_data['artist_name'],
+            #                                          spotify_data['song_title'],
+            #                                          rq_artist_name,
+            #                                          rq_song_name)
+            # if not ym_data['file_name'] and not ym_data['file_path'] and not rq_song_name:
+            #     yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
+            #                                  f"Failed to download the track, trying another one track...")
+            #     continue
+
+            youtube_data = await SongsApi.get_mp3_from_youtube(spotify_data['artist_name'],
+                                                               spotify_data['song_title'],)
+
+            if not youtube_data['file_name'] and not youtube_data['file_path'] and not rq_song_name:
+                yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
+                                             f"Failed to download the track, trying another one track...")
                 continue
 
-            if (not mp3_file_name or not mp3_file_path or not lyrics) and rq_song_name:
+            # if (not ym_data['file_name'] or not ym_data['file_path'] or not genius_data['lyrics']) and rq_song_name:
+            if (not youtube_data['file_name'] or not youtube_data['file_path'] or not genius_data['lyrics']) and rq_song_name:
                 yield await sse_resp_wrapper("No lyrics or MP3 track available, please try another one")
                 raise LyricsOrSourceNotAvailableError
 
-        yield await sse_resp_wrapper(f"{artist_name} - {song_name}\n"
+        yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
                                      f"Session is ready, final preparations...")
 
         # Устанавливаем успешный статус реквесту
         await SessionRequestsDAO.patch(session_request, success=True)
 
         # Создаем шаблон для заполнения слов
-        lyrics_state = await create_lyrics_state(lyrics)
+        if existing_track:
+            lyrics_state = await create_lyrics_state(json.loads(existing_track.lyrics)['lyrics'])
+            mp3_s3_url = existing_track.mp3_url
+        else:
+            lyrics_state = await create_lyrics_state(genius_data['lyrics'])
+            # mp3_s3_url = f'{settings.CLOUDFRONT_DOMAIN}/{ym_data['file_name']}'
+            mp3_s3_url = f'{settings.CLOUDFRONT_DOMAIN}/{youtube_data['file_name']}'
 
-        # Загружаем трек на S3
-        if not existing_track:
-            await S3Client.upload(mp3_file_name, mp3_file_path)
-            mp3_s3_url = f'{settings.CLOUDFRONT_DOMAIN}/{mp3_file_name}'
-            os.remove(mp3_file_path)
+            # await S3Client.upload(ym_data['file_name'], ym_data['file_path'])
+            await S3Client.upload(f'{youtube_data['file_name']}', youtube_data['file_path'])
+
+            # os.remove(ym_data['file_path'])
+            os.remove(youtube_data['file_path'])
+
+        # print(youtube_data['duration'])
+        # print(type(youtube_data['duration']))
 
         # Создаем объект трека в бд
         if not existing_track:
             new_track: Tracks = await TracksDAO.create(
-                artist_name=artist_name,
-                title=song_name,
-                lyrics=json.dumps({'lyrics': lyrics}),
+                artist_name=spotify_data['artist_name'],
+                title=spotify_data['song_title'],
+                lyrics=json.dumps({'lyrics': genius_data['lyrics']}),
                 mp3_url=mp3_s3_url,
-                album_cover_url=album_cover_url,
-                word_count=word_count
+                album_cover_url=spotify_data['album_cover_url'],
+                word_count=genius_data['word_count'],
+                spotify_id=spotify_data['spotify_id'],
+                spotify_url=spotify_data['url'],
+                genius_url=genius_data['url'],
+                youtube_url=youtube_data['url'],
+                peaks=json.dumps(youtube_data['peaks']),
+                duration=youtube_data['duration'],
+                # ym_url=ym_data['url'],
             )
         else:
             new_track = existing_track
@@ -240,12 +286,14 @@ async def sse_create_session(user: Users = Depends(get_current_user),
         yield f'data: {json.dumps({
             "status": "completed",
             "session_id": new_session.id,
-            "lyrics": lyrics,
+            "lyrics": new_track.lyrics,
             "lyrics_state": lyrics_state,
-            "artist_name": artist_name,
-            "song_title": song_name,
-            "album_cover_url": album_cover_url,
-            "mp3_path": mp3_s3_url
+            "artist_name": new_track.artist_name,
+            "song_title": new_track.title,
+            "album_cover_url": new_track.album_cover_url,
+            "mp3_path": new_track.mp3_url,
+            "peaks": new_track.peaks,
+            "duration": new_track.duration
         })}\n\n'
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

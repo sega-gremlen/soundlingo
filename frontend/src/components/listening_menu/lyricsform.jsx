@@ -1,71 +1,75 @@
-import React, {useState, useRef} from 'react';
+import {useState, useRef, useEffect} from 'react';
+import {Button} from 'antd';
 
-const LyricsForm = ({lyrics, socket}) => {
-    const lyricsData = Array.isArray(lyrics) ? lyrics : [];
 
-    console.log(lyricsData)
+const LyricsFormNew = ({
+                           lyrics,
+                           socket,
+                           lyricsState: localLyricsState,
+                           setIsRevealMode,
+                           isRevealMode,
+                           setHighlightIncorrect,
+                       }) => {
 
-    const [inputs, setInputs] = useState(
-        lyricsData.map((section) => {
-            const sectionTitle = Object.keys(section)[0]; // Получаем заголовок секции
-            const sectionContent = section[sectionTitle]; // Получаем содержимое секции
 
-            // Инициализация inputs
-            return {
-                [sectionTitle]: Object.keys(sectionContent).reduce((acc, lineIndex) => {
-                    acc[lineIndex] = Object.keys(sectionContent[lineIndex]).reduce((lineAcc, wordIndex) => {
-                        const wordData = sectionContent[lineIndex][wordIndex]; // Получаем данные слова
-                        lineAcc[wordIndex] = {
-                            value: wordData.filled ? wordData.value : '', // Заполняем значение, если filled == true
-                            // value: wordData.value,
-                            filled: wordData.filled // Устанавливаем состояние filled
-                        };
-                        return lineAcc;
-                    }, {});
-                    return acc;
-                }, {})
+    const [showWords, setShowWords] = useState(false);
+    // const [lyricsState, setLyricsState] = useState(localLyricsState);
+    // const [isRevealMode, setIsRevealMode] = useState(false);
+    const containerRef = useRef(null);
+
+
+    // Для управления подсветкой в режиме "Открытие слова"
+    // const [highlightIncorrect, setHighlightIncorrect] = useState(false);
+
+    function useExitRevealMode(setIsRevealMode) {
+        useEffect(() => {
+            const handleKeyDown = (event) => {
+                if (event.key === 'Escape') {
+                    setIsRevealMode(false);
+                }
             };
-        })
-    );
 
+            document.addEventListener('keydown', handleKeyDown);
 
-    // Функция для блокировки после правильно введенного слова
-    const [editable, setEditable] = useState(
-        lyricsData.map((section) => {
-            const sectionTitle = Object.keys(section)[0];
-            return Object.keys(section[sectionTitle]).map(lineIndex =>
-                Object.keys(section[sectionTitle][lineIndex]).map(() => true)
-            );
-        })
-    );
+            return () => {
+                document.removeEventListener('keydown', handleKeyDown);
+            };
+        }, [setIsRevealMode]);
+    }
 
-    const [showWords, setShowWords] = useState(false); // Текст скрыт по умолчанию
+    useExitRevealMode(setIsRevealMode);
+
+    // const [showWords, setShowWords] = useState(false); // Текст скрыт по умолчанию
 
     const inputRefs = useRef([]);
 
-    const toggleShowWords = () => {
-        setShowWords(!showWords);
-    };
+    // Проверка на то было ли раскрыто слово с помощью кнопки
+    const [revealedWords, setRevealedWords] = useState({});
+
+    const [lyricsState, setLyricsState] = useState(localLyricsState);
+
 
     // Функция для изменения ячейки ввода при наборе симвлов
-    const handleInputChange = (sectionIndex, lineIndex, wordIndex, value) => {
-        const newInputs = [...inputs];
-        newInputs[sectionIndex][Object.keys(newInputs[sectionIndex])[0]][lineIndex][wordIndex].value = value; // Обновляем значение в inputs
-        setInputs(newInputs);
+    const handleInputChange = (lyricsWord, sectionIndex, lineIndex, wordIndex, value) => {
+        // Обновляем значение
+        const updatedLyricsState = {...lyricsState};
+        updatedLyricsState[sectionIndex][lineIndex][wordIndex].value = value;
+        setLyricsState(updatedLyricsState);
+        const valid = false
 
         const currentWordLength = cleanString(value).length;
-        const originalWord = lyricsData[sectionIndex][Object.keys(lyricsData[sectionIndex])[0]][lineIndex][wordIndex].value;
-        const originalWordLength = cleanString(originalWord).length;
+        // const originalWord = lyrics[sectionIndex][0][lineIndex][wordIndex];
+        const originalWordLength = cleanString(lyricsWord).length;
 
 
         if (currentWordLength === originalWordLength) {
-            const wordsInLine = Object.keys(lyricsData[sectionIndex][Object.keys(lyricsData[sectionIndex])[0]][lineIndex]);
+            const wordsInLine = Object.keys(updatedLyricsState[sectionIndex][lineIndex]);
 
 
             if (Number(wordIndex) === wordsInLine.length - 1) {
                 const nextLineIndex = Number(lineIndex) + 1;
 
-                if (lyricsData[sectionIndex][Object.keys(lyricsData[sectionIndex])[0]][nextLineIndex]) {
+                if (updatedLyricsState[sectionIndex][nextLineIndex]) {
                     // Переход к первому слову следующей строки
                     const nextInputRef = inputRefs.current[`${sectionIndex}-${nextLineIndex}-0`];
                     if (nextInputRef) {
@@ -74,7 +78,7 @@ const LyricsForm = ({lyrics, socket}) => {
                 } else {
                     const nextSectionIndex = Number(sectionIndex) + 1;
 
-                    if (lyricsData[nextSectionIndex]) {
+                    if (updatedLyricsState[nextSectionIndex]) {
                         // Переход к первому слову первой строки следующей части
                         const nextInputRef = inputRefs.current[`${nextSectionIndex}-0-0`];
                         if (nextInputRef) {
@@ -89,58 +93,55 @@ const LyricsForm = ({lyrics, socket}) => {
                     nextInputRef.focus();
                 }
             }
-        }
 
-        // Проверка на совпадение и установка поля как не редактируемого
-        if (cleanString(value).toLowerCase() === cleanString(originalWord).toLowerCase()) {
-            const newEditable = [...editable];
-            newEditable[sectionIndex][lineIndex][wordIndex] = false; // Сделать поле не редактируемым
-            setEditable(newEditable);
-            if (socket) {
-                socket.send(JSON.stringify({
-                    sectionIndex,
-                    lineIndex,
-                    wordIndex
-                }));
-            }
+            socket.send(JSON.stringify({
+                sectionIndex,
+                lineIndex,
+                wordIndex,
+                value,
+                revealed: false,
+                valid: cleanString(value).toLowerCase() === cleanString(lyricsWord).toLowerCase(),
+                //cleanString(lyricsStateWord).toLowerCase() === cleanString(lyricsWord).toLowerCase()
+            }));
+
         }
     };
 
-    // Функция для изменения ячейки ввода при наборе удалении символов
     const handleKeyDown = (sectionIndex, lineIndex, wordIndex, event) => {
-        if (event.key === 'Backspace' && inputs[sectionIndex][Object.keys(inputs[sectionIndex])[0]][lineIndex][wordIndex].value.length === 0) {
+        if (event.key === ' ') {
+            event.preventDefault();
+        } else if (event.key === 'Backspace' && lyricsState[sectionIndex][lineIndex][wordIndex].value.length === 0) {
             if (wordIndex > 0) {
                 const prevInputRef = inputRefs.current[`${sectionIndex}-${lineIndex}-${wordIndex - 1}`];
                 if (prevInputRef) {
                     prevInputRef.focus();
                 }
             } else if (lineIndex > 0) {
-                const prevLineWords = Object.keys(lyricsData[sectionIndex][Object.keys(lyricsData[sectionIndex])[0]][lineIndex - 1]);
+                const prevLineWords = Object.keys(lyricsState[sectionIndex][lineIndex - 1])
                 const lastWordIndexInPrevLine = prevLineWords.length - 1;
                 const prevInputRef = inputRefs.current[`${sectionIndex}-${lineIndex - 1}-${lastWordIndexInPrevLine}`];
                 if (prevInputRef) {
                     prevInputRef.focus();
                 }
             } else if (sectionIndex > 0) {
-                const prevSection = lyricsData[sectionIndex - 1];
-                const prevSectionTitle = Object.keys(prevSection)[0];
-                const prevSectionLines = Object.keys(prevSection[prevSectionTitle]);
+                const prevSectionLines = Object.keys(lyricsState[sectionIndex - 1]);
                 const lastLineIndexInPrevSection = prevSectionLines.length - 1;
-                const lastWordIndexInPrevLine = Object.keys(prevSection[prevSectionTitle][lastLineIndexInPrevSection]).length - 1;
+                const lastWordIndexInPrevLine = Object.keys(lyricsState[sectionIndex - 1][lastLineIndexInPrevSection]).length - 1;
                 const prevInputRef = inputRefs.current[`${sectionIndex - 1}-${lastLineIndexInPrevSection}-${lastWordIndexInPrevLine}`];
                 if (prevInputRef) {
                     prevInputRef.focus();
                 }
             }
+        } else if (event.key === 'Backspace' && lyricsState[sectionIndex][lineIndex][wordIndex].value.length === 1) {
+            socket.send(JSON.stringify({
+                sectionIndex,
+                lineIndex,
+                wordIndex,
+                value: '',
+                revealed: false,
+                valid: false,
+            }));
         }
-    };
-
-    // Функция для блокировки пробела
-    const preventSpaceAndHandleBackspace = (event, sectionIndex, lineIndex, wordIndex) => {
-        if (event.key === ' ') {
-            event.preventDefault(); // Игнорируем пробел
-        }
-        handleKeyDown(sectionIndex, lineIndex, wordIndex, event);
     };
 
     // Удаление символов для проверки правильности ввода
@@ -149,84 +150,189 @@ const LyricsForm = ({lyrics, socket}) => {
     };
 
 
+    const toggleShowWords = () => {
+        setShowWords(!showWords);
+    };
+
+    const handleRevealWord = (sectionIndex, lineIndex, wordIndex) => {
+        const updatedLyricsState = {...lyricsState};
+        const lyricsWord = lyrics[sectionIndex][Object.keys(lyrics[sectionIndex])[0]][lineIndex][wordIndex].value;
+
+        // Обновляем lyricsState
+        updatedLyricsState[sectionIndex][lineIndex][wordIndex].value = lyricsWord;
+        setLyricsState(updatedLyricsState);
+
+        // Устанавливаем слово как раскрытое
+        setRevealedWords(prevState => ({
+            ...prevState,
+            [`${sectionIndex}-${lineIndex}-${wordIndex}`]: true,  // Отмечаем слово как раскрытое
+        }));
+
+        // Отправляем слово в бд
+        socket.send(JSON.stringify({
+            sectionIndex,
+            lineIndex,
+            wordIndex,
+            value: lyricsWord,
+            revealed: true,
+            valid: true
+        }));
+
+        setHighlightIncorrect(false);
+        setIsRevealMode(false);
+
+    };
+
+    // const revealModeHandler = () => {
+    //     setIsRevealMode(true);
+    //     setHighlightIncorrect(true); // Включить подсветку слов которые незаполнены правильно
+    // };
+
+
     return (
-        <>
-            <button
-                style={{
-                    margin: 20
-                }}
-                onClick={toggleShowWords}>
-                {showWords ? 'Скрыть слова' : 'Показать слова'}
-            </button>
+        <div style={{}}>
+            {/*<button*/}
+            {/*    style={{*/}
+            {/*        margin: 20,*/}
+            {/*        flex: 'auto',*/}
+            {/*    }}*/}
+            {/*    onClick={toggleShowWords}>*/}
+            {/*    {showWords ? 'Скрыть слова' : 'Показать слова'}*/}
+            {/*</button>*/}
 
-            {inputs.map((section, sectionIndex) => {
-                const sectionTitle = Object.keys(section)[0]; // Получаем заголовок секции
-                const lines = section[sectionTitle]; // Получаем строки из состояния inputs
+            {/*<Button*/}
+            {/*    onClick={revealModeHandler}*/}
+            {/*    style={{*/}
+            {/*        flex: 'auto',*/}
+            {/*        marginTop: 30,*/}
+            {/*        position: 'sticky',*/}
+            {/*        top: 220,*/}
+            {/*        right: 0,*/}
+            {/*        zIndex: 5,*/}
+            {/*        transform: 'translateX(400%)'*/}
+            {/*    }}*/}
+            {/*>*/}
+            {/*    Открыть слово*/}
+            {/*</Button>*/}
 
-                return (
-                    <div
-                        key={`section-${sectionIndex}-${sectionTitle}`} // Добавляем sectionIndex для уникальности
-                        style={{
-                            marginBottom: '50px',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                        }}
-                    >
-                        <h3 style={{marginBottom: '4px'}}>{sectionTitle}</h3>
-                        {Object.keys(lines).map((lineIndex) => {
-                            const words = lines[lineIndex]; // Получаем слова из текущей строки
 
-                            return (
-                                <div key={`line-${sectionIndex}-${lineIndex}`} style={{display: 'flex'}}>
-                                    <div style={{display: 'flex', marginBottom: '10px'}}>
-                                        {Object.keys(words).map((wordIndex) => {
-                                            const wordObj = words[wordIndex]; // Получаем объект слова
-                                            const originalWord = lyricsData[sectionIndex][sectionTitle][lineIndex][wordIndex].value; // Получаем оригинальное слово для сравнения
+            {Object.keys(lyricsState).map((lyricsStateSectionIndex) => {
+    const lyricsStateLines = lyricsState[lyricsStateSectionIndex];
+    const lyricsSectionData = Object.values(lyrics)[Number(lyricsStateSectionIndex)];
+    const lyricsSectionTitle = Object.keys(lyricsSectionData)[0];
 
-                                            return (
-                                                <div
-                                                    key={`word-${sectionIndex}-${lineIndex}-${wordIndex}`} // Обновленный ключ для слова
-                                                    style={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                    }}
-                                                >
-                                                    <input
-                                                        ref={(el) => {
-                                                            inputRefs.current[`${sectionIndex}-${lineIndex}-${wordIndex}`] = el;
-                                                        }}
-                                                        type="text"
-                                                        maxLength={originalWord.length} // Устанавливаем длину поля ввода
-                                                        value={wordObj.value} // Заполняем значение из inputs
-                                                        onChange={(e) => handleInputChange(sectionIndex, lineIndex, wordIndex, e.target.value)}
-                                                        onKeyDown={(e) => preventSpaceAndHandleBackspace(e, sectionIndex, lineIndex, wordIndex)}
-                                                        style={{
-                                                            width: `${originalWord.length + 2}ch`,
-                                                            marginRight: '1px',
-                                                            color: 'black',
-                                                            backgroundColor: cleanString(wordObj.value).toLowerCase() === cleanString(originalWord).toLowerCase() ? 'rgba(142,255,142,0.43)' : 'rgba(255,175,175,0.16)',
-                                                            outline: 'none',
-                                                            textAlign: 'center',
-                                                        }}
-                                                        disabled={!editable[sectionIndex][lineIndex][wordIndex]} // Устанавливаем поле как не редактируемое
-                                                    />
-                                                    {showWords &&
-                                                        <span>{originalWord}</span>} {/* Здесь можно использовать originalWord для отображения правильного слова */}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                );
-            })}
-        </>
+    // Проверяем, содержит ли часть трека только одну строку и одно пустое слово
+    const isSingleEmptyWordSection =
+        Object.keys(lyricsStateLines).length === 1 && // Только одна строка
+        Object.keys(lyricsStateLines[0]).length === 1 && // Только одно слово в строке
+        lyrics[lyricsStateSectionIndex][lyricsSectionTitle][0][0].value.trim() === ""; // Слово пустое
+
+    return (
+        <div
+            key={`section-${lyricsStateSectionIndex}-${lyricsSectionTitle}`}
+            style={{
+                marginBottom: '50px',
+                display: 'flex',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
+            <h3 style={{ marginBottom: '4px' }}>{lyricsSectionTitle}</h3>
+            {!isSingleEmptyWordSection ? (
+                Object.keys(lyricsStateLines).map((lyricsStateLineIndex) => {
+                    const lyricsStateWords = lyricsStateLines[lyricsStateLineIndex];
+
+                    return (
+                        <div
+                            key={`line-${lyricsStateSectionIndex}-${lyricsStateLineIndex}`}
+                            style={{
+                                display: 'flex',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    marginBottom: '10px',
+                                }}
+                            >
+                                {Object.keys(lyricsStateWords).map((lyricsStateWordIndex) => {
+                                    const lyricsStateWord = lyricsStateWords[lyricsStateWordIndex].value;
+                                    const lyricsStateWordRevealedStatus = lyricsStateWords[lyricsStateWordIndex].revealed;
+                                    const lyricsWord = lyrics[lyricsStateSectionIndex][lyricsSectionTitle][lyricsStateLineIndex][lyricsStateWordIndex].value;
+
+                                    // Пропускаем создание input, если слово пустое
+                                    if (lyricsWord.trim() === "") {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <div
+                                            key={`word-${lyricsStateSectionIndex}-${lyricsStateLineIndex}-${lyricsStateWordIndex}`}
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                position: 'relative',
+                                            }}
+                                        >
+                                            <input
+                                                ref={(el) => {
+                                                    inputRefs.current[`${lyricsStateSectionIndex}-${lyricsStateLineIndex}-${lyricsStateWordIndex}`] = el;
+                                                }}
+                                                type="text"
+                                                maxLength={lyricsWord.length}
+                                                value={lyricsStateWord}
+                                                onChange={(e) => handleInputChange(lyricsWord, lyricsStateSectionIndex, lyricsStateLineIndex, lyricsStateWordIndex, e.target.value)}
+                                                onKeyDown={(e) => handleKeyDown(lyricsStateSectionIndex, lyricsStateLineIndex, lyricsStateWordIndex, e)}
+                                                style={{
+                                                    width: `${lyricsWord.length + 2}ch`,
+                                                    marginRight: '5px',
+                                                    color: 'black',
+                                                    backgroundColor: (revealedWords[`${lyricsStateSectionIndex}-${lyricsStateLineIndex}-${lyricsStateWordIndex}`] || lyricsStateWordRevealedStatus)
+                                                        ? isRevealMode ? 'rgba(244,244,244,0.11)' : 'rgba(255,225,154,0.78)'
+                                                        : cleanString(lyricsStateWord).toLowerCase() === cleanString(lyricsWord).toLowerCase()
+                                                            ? isRevealMode ? 'rgba(244,244,244,0.11)' : 'rgba(131,255,131,0.68)'
+                                                            : isRevealMode
+                                                                ? 'rgba(255,125,125,0.68)'
+                                                                : 'rgba(255,153,153,0.32)',
+                                                    outline: 'none',
+                                                    textAlign: 'center',
+                                                    cursor: isRevealMode ? 'pointer' : 'text',
+                                                    zIndex: 4,
+                                                }}
+                                                disabled={cleanString(lyricsStateWord).toLowerCase() === cleanString(lyricsWord).toLowerCase()}
+                                                onClick={() => isRevealMode && handleRevealWord(lyricsStateSectionIndex, lyricsStateLineIndex, lyricsStateWordIndex)}
+                                            />
+                                            {showWords && <span>{lyricsWord}</span>}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })
+            ) : null} {/* Если часть трека содержит только одно пустое слово, ничего не рендерим, кроме заголовка */}
+        </div>
+    );
+})}
+
+            {isRevealMode && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        zIndex: 3,
+                    }}
+                    onClick={() => setIsRevealMode(false)}
+                />
+            )}
+
+        </div>
     );
 };
-
-export default LyricsForm;
+export default LyricsFormNew;

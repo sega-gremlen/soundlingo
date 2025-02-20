@@ -77,6 +77,8 @@ const ListeningMenu = ({setError}) => {
                             image_url: data.image_url,
                             artist_name: data.artist_name,
                             song_title: data.song_title,
+                            peaks: data.peaks,
+                            duration: data.duration,
                         },
                     });
                 } else {

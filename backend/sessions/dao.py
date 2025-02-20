@@ -1,5 +1,6 @@
 import asyncio
 import json
+import pprint
 
 from backend.dao.base import BaseDAO
 from backend.dao.creator import async_sessionmaker
@@ -34,5 +35,5 @@ class SessionsDAO(BaseDAO):
 
 if __name__ == '__main__':
     async def eee():
-        b, c, d = await SessionsDAO.find_session_data(4)
+        pprint.pprint(await SessionsDAO.find_all(Sessions.user_id == 1))
     asyncio.run(eee())

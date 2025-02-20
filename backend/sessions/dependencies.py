@@ -17,6 +17,8 @@ from yandex_music import ClientAsync
 import yt_dlp
 import librosa
 import numpy as np
+from yt_dlp.YoutubeDL import DownloadError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from backend.config import settings
 
@@ -221,6 +223,9 @@ class SongsApi:
             if popular_songs:
                 song = random.choice(popular_songs)
             return song
+        elif not song_name and artist_name:
+            print('we are here')
+            return songs[random.randint(0, len(songs) - 1)]
         else:
             return songs[0]
 
@@ -293,6 +298,14 @@ class SongsApi:
 
 
         """
+        result = {
+            'file_name': None,
+            'file_path': None,
+            'url': None,
+            'peaks': None,
+            'duration': None,
+        }
+
         search_ydl_opts = {
             'quiet': True,
             'default_search': 'ytsearch',
@@ -308,39 +321,48 @@ class SongsApi:
 
         file_name = f"{uuid.uuid4()}"
         file_path = str(settings.MP3_FOLDER / file_name)
-        download_ydl_opts = {
-            'format': 'bestaudio/best',
-            # 'ffmpeg_location': r'C:\\ffmpeg\\bin\\ffmpeg.exe',
-            'outtmpl': file_path,
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '320',
-            }],
-            'noplaylist': True,  # Отключает загрузку плейлистов, если в ссылке есть плейлист
-            'extractaudio': True,  # Гарантирует, что будет скачан только аудио файл
-            'extract_flat': True,  # Отключает получение информации о плеере
-        }
 
-        with yt_dlp.YoutubeDL(download_ydl_opts) as ydl:
-            ydl.download([video_url])
+        @retry(stop=stop_after_attempt(5),  # Максимум 5 попыток
+               wait=wait_exponential(multiplier=1, min=4, max=10),  # Экспоненциальная задержка
+               retry=retry_if_exception_type(DownloadError),)  # Повторять при любых исключениях
+        async def download_mp3():
+            """
+            Непосредственно сама операция загрузки. Сделано отедльно для повторных попыток
+            из-за частых ошибок именно при загрузке.
+            """
+            download_ydl_opts = {
+                'format': 'bestaudio/best',
+                # 'ffmpeg_location': r'C:\\ffmpeg\\bin\\ffmpeg.exe',
+                'outtmpl': file_path,
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '320',
+                }],
+                'noplaylist': True,  # Отключает загрузку плейлистов, если в ссылке есть плейлист
+                'extractaudio': True,  # Гарантирует, что будет скачан только аудио файл
+                'extract_flat': True,  # Отключает получение информации о плеере
+            }
+            with yt_dlp.YoutubeDL(download_ydl_opts) as ydl:
+                ydl.download([video_url])
+
+        try:
+            await download_mp3()
+        except DownloadError:
+            print("Неудачная попытка загрузить трек")
+            return result
 
         print(f'YouTube - {spotify_artist_name} {spotify_song_name} - Трек скачан')
-
-        peaks, duration = await cls._process_audio(f'{file_path}.mp3')
-
-        return {
-            'file_name': file_name + '.mp3',
-            'file_path': file_path + '.mp3',
-            'url': video_url,
-            'peaks': peaks,
-            'duration': duration,
-        }
+        result['file_name'] = file_name + '.mp3'
+        result['file_path'] = file_path + '.mp3'
+        result['url'] = video_url
+        result['peaks'], result['duration'] = await cls._process_audio(result['file_path'])
+        return result
 
     @classmethod
     async def _process_audio(cls, file_path, target_width=800) -> (list, int):
         """
-        Декудируем данные из аудио-файла для плеера на фронте:
+        Извлекаем данные из аудио-файла для плеера на фронте:
         - частотные пики для построения спектрограммы
         - длительность трека
 
@@ -349,6 +371,8 @@ class SongsApi:
 
         :return: dict со списком пиков и длительностью треков
         """
+
+        print('Строим пики...')
 
         # Загружаем аудио как моно-сигнал
         y, sr = librosa.load(file_path, sr=None, mono=True)

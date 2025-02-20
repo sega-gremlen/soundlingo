@@ -56,12 +56,10 @@ manager = ConnectionManager()
 
 @exercise_router.get('/sessions/{session_id}')
 async def get_session(user: Users = Depends(get_current_user), session_id: int = None):
-    print(session_id)
     if user:
         session: Sessions = await SessionsDAO.find_one_or_none(Sessions.id == session_id)
-        if session:
+        if session and session.user_id == user.id:
             session_data, track_data, lyrics_state_data = await SessionsDAO.find_session_data(session_id)
-
             return {
                 "lyrics": json.loads(track_data.lyrics)['lyrics'],
                 "lyrics_state": json.loads(lyrics_state_data.lyrics_state)['lyrics_state'],
@@ -179,8 +177,11 @@ async def sse_create_session(user: Users = Depends(get_current_user),
 
             spotify_data = await SongsApi.parse_spotify_song_json(song)
 
-            existing_track: Tracks | None = await TracksDAO.find_one_or_none(
-                Tracks.spotify_id == spotify_data['spotify_id'])
+            existing_track: Tracks | None = await TracksDAO.find_existing_tracks(
+                spotify_id=spotify_data['spotify_id'],
+                artist_name=spotify_data['artist_name'],
+                track_title=spotify_data['song_title'],
+                )
 
             if existing_track:
                 print('Retrieved from cache')

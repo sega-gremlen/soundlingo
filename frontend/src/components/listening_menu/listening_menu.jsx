@@ -1,8 +1,8 @@
-import React, {useState, useEffect} from 'react';
-import {Input, Button, message, Spin, Divider} from 'antd';
-import {useNavigate} from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Input, Button, message, Spin, Divider } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
-const ListeningMenu = ({setError}) => {
+const ListeningMenu = ({ setError }) => {
     const [field1, setField1] = useState('');
     const [field2, setField2] = useState('');
     const [isDisabled, setIsDisabled] = useState(true);
@@ -23,12 +23,9 @@ const ListeningMenu = ({setError}) => {
                 if (!response.ok) {
                     const errorData = await response.json();
                     setError(`Error: ${response.status} - ${errorData.detail || 'No details provided'}`); // Set error message
-
                 } else {
                     setIsBlurred(false); // Set blur state
                 }
-
-
             } catch (error) {
                 console.error('Error accessing the server:', error);
                 setIsBlurred(true); // Set blur state
@@ -42,11 +39,14 @@ const ListeningMenu = ({setError}) => {
         if (field === 'field1') setField1(value);
         if (field === 'field2') setField2(value);
 
-        const currentField1 = field === 'field1' ? value : field1;
-        const currentField2 = field === 'field2' ? value : field2;
-
-        setIsDisabled(!(currentField1.trim() || currentField2.trim()));
+        // Проверяем только поле Artist name/band title (field1)
+        setIsDisabled(!field1.trim()); // Кнопка активна, только если field1 не пустое
     };
+
+    // Обновляем состояние кнопки при изменении field1
+    useEffect(() => {
+        setIsDisabled(!field1.trim());
+    }, [field1]);
 
     const handleRandomClick = async () => {
         setLoading(true);
@@ -54,8 +54,8 @@ const ListeningMenu = ({setError}) => {
 
         try {
             const params = new URLSearchParams({
-                rq_artist_name: field1 || '',
-                rq_song_name: field2 || ''
+                rq_artist_name: '',
+                rq_song_name: ''
             });
 
             const eventSource = new EventSource(`http://localhost:8000/sse_create_session?${params.toString()}`, {
@@ -126,11 +126,11 @@ const ListeningMenu = ({setError}) => {
                 }}
             >
                 <div>
-                <span style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    marginBottom: '12px',
-                }}>Listen to a specific track</span>
+                    <span style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: '12px',
+                    }}>Listen to a specific track</span>
 
                     <div className="space-y-2" style={{
                         display: 'flex',
@@ -138,14 +138,14 @@ const ListeningMenu = ({setError}) => {
                         flexDirection: 'column'
                     }}>
                         <Input
-                            style={{minWidth: '250px'}}
+                            style={{ minWidth: '250px' }}
                             placeholder="Artist name/band title"
                             value={field1}
                             onChange={(e) => handleInputChange('field1', e.target.value)}
                             required
                         />
                         <Input
-                            style={{minWidth: '250px'}}
+                            style={{ minWidth: '250px' }}
                             placeholder="Track title"
                             value={field2}
                             onChange={(e) => handleInputChange('field2', e.target.value)}
@@ -154,7 +154,7 @@ const ListeningMenu = ({setError}) => {
                         <Button onClick={handleRandomClick}
                                 type="primary"
                                 htmlType="submit"
-                                disabled={isDisabled || loading} // Disable if loading
+                                disabled={isDisabled || loading} // Disable if loading or field1 is empty
                                 style={{
                                     minWidth: '100px',
                                     backgroundColor: (isDisabled || loading) ? 'grey' : 'black',
@@ -177,11 +177,11 @@ const ListeningMenu = ({setError}) => {
                         flexDirection: 'column',
                         justifyContent: 'center',
                     }}>
-                <span
-                    style={{
-                        marginBottom: '12px'
-                    }}
-                >Choose a random one</span>
+                    <span
+                        style={{
+                            marginBottom: '12px'
+                        }}
+                    >Choose a random one</span>
                     <Button
                         style={{
                             minWidth: '70px',
@@ -200,12 +200,10 @@ const ListeningMenu = ({setError}) => {
 
             <div style={{
                 position: "absolute",
-
                 display: "flex",
                 flexDirection: "column",
                 gap: "10px",
                 textAlign: "center",
-
                 top: "72%",
                 left: "50%",
                 transform: "translateX(-50%)",
@@ -216,7 +214,7 @@ const ListeningMenu = ({setError}) => {
                     {
                         loading
                         && (
-                            <Spin/>
+                            <Spin />
                         )}
                 </div>
 

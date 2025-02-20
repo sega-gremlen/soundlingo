@@ -39,6 +39,6 @@ class BaseDAO:
     @classmethod
     async def find_all(cls, *filter_by):
         async with async_sessionmaker() as session:
-            querry = select(cls.model).filter(*filter_by)
+            querry = select(cls.model.__table__.columns).filter(*filter_by)
             result = await session.execute(querry)
-            return result.scalars().all()
+            return result.mappings().all()

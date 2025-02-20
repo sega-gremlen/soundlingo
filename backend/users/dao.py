@@ -19,10 +19,8 @@ class UsersDAO(BaseDAO):
 
         async with async_sessionmaker() as session:
             querry = select(cls.model, Sessions).join(Sessions)
-
             result = await session.execute(querry)
             result: Tuple[Users, Sessions] = result.tuples().all()
-
             return result
 
     @classmethod

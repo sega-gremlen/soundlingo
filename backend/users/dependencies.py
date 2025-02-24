@@ -1,5 +1,7 @@
 import asyncio
+import re
 from datetime import datetime, UTC
+from typing import Union
 
 import jwt
 from jose import JWTError, jwt as jose_jwt
@@ -15,7 +17,7 @@ from backend.users.exceptions import (WrongAuthToken,
                                       )
 from backend.users.models import Users
 
-from fastapi import Request, Depends
+from fastapi import Request, Depends, WebSocket
 
 import smtplib
 from email.mime.text import MIMEText
@@ -50,36 +52,102 @@ async def create_access_token(data: dict):
     return encoded_jwt
 
 
-async def get_jwt_token(request: Request):
-    token = request.cookies.get(settings.AUTH_TOKEN_TITLE)
-    if not token:
-        raise MissingAuthToken
-    return token
+# Общая функция для извлечения токена
+async def extract_token_from(source: Union[Request, WebSocket]) -> str:
+    # Для HTTP-запросов
+    if isinstance(source, Request):
+        token = source.cookies.get(settings.AUTH_TOKEN_TITLE)
+    # Для WebSocket
+    elif isinstance(source, WebSocket):
+        cookie_header = source.headers.get("cookie", "")
+        match = re.search(rf"{settings.AUTH_TOKEN_TITLE}=([^\s;]+)", cookie_header)
+        token = match.group(1) if match else None
+    else:
+        raise ValueError("Unsupported source type")
+
+    if token:
+        return token
+    raise MissingAuthToken
 
 
-async def get_current_user(token: str = Depends(get_jwt_token)):
-    """ Получение пользователя """
+# async def get_jwt_token(request: Request):
+#     if request:
+#         token = request.cookies.get(settings.AUTH_TOKEN_TITLE)
+#         if token:
+#             return token
+#     raise MissingAuthToken
 
+
+# async def get_current_user(token: str = Depends(get_jwt_token)):
+#     """ Получение пользователя """
+#
+#     try:
+#         payload = jose_jwt.decode(
+#             token, settings.AUTH_TOKEN_SECRET_KEY, settings.AUTH_TOKEN_ALGORITHM
+#         )
+#     except JWTError as e:
+#         raise DecodeAuthTokenError
+#     try:
+#         expire: str = payload.get('exp')
+#     except KeyError:
+#         raise WrongAuthToken
+#     if int(expire) < datetime.now(UTC).timestamp():
+#         raise ExpiredAuthToken
+#     try:
+#         user_id: str = payload.get('sub')
+#     except KeyError:
+#         raise WrongAuthToken
+#     user: Users = await UsersDAO.find_one_or_none(Users.id == int(user_id))
+#     if not user:
+#         raise MissingUserOnAuthToken
+#     return user
+
+
+# Общая функция валидации
+async def validate_token(token: str) -> Users:
     try:
-        payload = jose_jwt.decode(
-            token, settings.AUTH_TOKEN_SECRET_KEY, settings.AUTH_TOKEN_ALGORITHM
+        payload = jwt.decode(
+            token,
+            settings.AUTH_TOKEN_SECRET_KEY,
+            algorithms=[settings.AUTH_TOKEN_ALGORITHM]
         )
-    except JWTError as e:
+    except JWTError:
         raise DecodeAuthTokenError
-    try:
-        expire: str = payload.get('exp')
-    except KeyError:
-        raise WrongAuthToken
-    if int(expire) < datetime.now(UTC).timestamp():
+
+    expire = payload.get('exp')
+    if not expire or int(expire) < datetime.now(UTC).timestamp():
         raise ExpiredAuthToken
-    try:
-        user_id: str = payload.get('sub')
-    except KeyError:
+
+    user_id = payload.get('sub')
+    if not user_id:
         raise WrongAuthToken
-    user: Users = await UsersDAO.find_one_or_none(Users.id == int(user_id))
+
+    user = await UsersDAO.find_one_or_none(Users.id == int(user_id))
     if not user:
         raise MissingUserOnAuthToken
+
     return user
+
+
+# Адаптеры для разных протоколов
+# Для HTTP
+async def get_jwt_token_http(request: Request) -> str:
+    return await extract_token_from(request)
+
+
+# Для WebSocket
+async def get_jwt_token_ws(websocket: WebSocket) -> str:
+    return await extract_token_from(websocket)
+
+
+# Единая функция для получения пользователя
+async def get_current_user(token: str = Depends(get_jwt_token_http)) -> Users:
+    return await validate_token(token)
+
+
+# Для WebSocket-эндпоинтов используем ту же validate_token
+async def get_current_user_ws(token: str = Depends(get_jwt_token_ws)) -> Users:
+    return await validate_token(token)
 
 
 async def send_email(to_email, user_nickname, uuid_email_verifying):
@@ -139,5 +207,6 @@ if __name__ == '__main__':
 
     async def as_try():
         print(await get_users_points())
+
 
     asyncio.run(as_try())

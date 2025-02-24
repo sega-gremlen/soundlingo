@@ -9,6 +9,8 @@ import uuid
 from random import choice
 import unicodedata
 
+from fastapi import WebSocket
+
 from requests.exceptions import SSLError, Timeout
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -21,10 +23,7 @@ from yt_dlp.YoutubeDL import DownloadError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from backend.config import settings
-
-
-async def sse_resp_wrapper(response_text):
-    return f'data: {json.dumps({"status": response_text})}\n\n'
+from backend.users.models import Users
 
 
 class SongsApi:
@@ -35,6 +34,9 @@ class SongsApi:
                                               client_secret=settings.SPOTIFY_CLIENT_SECRET, ))
     genius_client = Genius(settings.GENIUS_TOKEN)
     genius_client.verbose = False
+
+    async def create_sesison(self, websocket: WebSocket, user: Users, ):
+        ...
 
     @classmethod
     async def _split_lyrics(cls, lyrics) -> (list, int):
@@ -85,21 +87,21 @@ class SongsApi:
             'url': None
         }
 
-        async def search_song(artist_name: str, song_name: str):
+        async def search_lyrics(artist_name: str, song_name: str):
             try:
                 return cls.genius_client.search_song(song_name, artist_name)
             except (SSLError, Timeout):
                 print(f'Ошибка соединения с Genius, повторная попытка через 5 секунд...')
                 await asyncio.sleep(5)
-                return await search_song(artist_name, song_name)  # Рекурсивный повтор запроса
+                return await search_lyrics(artist_name, song_name)  # Рекурсивный повтор запроса
 
         # Первый поиск
-        song = await search_song(spotify_artist_name, spotify_song_name)
+        song = await search_lyrics(spotify_artist_name, spotify_song_name)
 
         # Если первый поиск не дал результата, пробуем второй раз с rq_данными
         if not song:
             print(f'Genius - {spotify_artist_name} - {spotify_song_name} - Трек не найден, пробуем другой вариант...')
-            song = await search_song(rq_artist_name, rq_song_name)
+            song = await search_lyrics(rq_artist_name, rq_song_name)
 
         # Если после второго поиска трек всё равно не найден — завершаем
         if not song:

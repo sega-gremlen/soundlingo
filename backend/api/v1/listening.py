@@ -1,34 +1,27 @@
 import os
-import pprint
-import time
 from datetime import datetime, UTC
 from typing import List
+import json
 
-from fastapi import APIRouter, Query, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
 from backend.config import settings
 from backend.lyrics_states.models import LyricsStates
-
-from backend.sessions.dependencies import SongsApi, sse_resp_wrapper
+from backend.sessions.dependencies import SongsApi
 from backend.sessions.exceptions import TrackNotFoundError, LyricsOrSourceNotAvailableError, SessionFoundError
 from backend.sessions.models import Sessions
-from backend.sessions.schemas import SSessionCreate
 from backend.sessions.dao import SessionsDAO
 from backend.tracks.dao import TracksDAO
 from backend.lyrics_states.dao import LyricsStatesDAO
 from backend.lyrics_states.dependencies import create_lyrics_state
 from backend.tracks.dependencies import S3Client
-
-import json
-
 from backend.tracks.models import Tracks
-from backend.users.dependencies import get_current_user
+from backend.users.dependencies import get_current_user, get_current_user_ws
 from backend.users.models import Users
 from backend.session_requests.dao import SessionRequestsDAO
 from backend.session_requests.models import SessionRequests
 
-exercise_router = APIRouter()
+practice_router = APIRouter()
 
 
 class ConnectionManager:
@@ -54,7 +47,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@exercise_router.get('/sessions/{session_id}')
+@practice_router.get('/sessions/{session_id}')
 async def get_session(user: Users = Depends(get_current_user), session_id: int = None):
     if user:
         session: Sessions = await SessionsDAO.find_one_or_none(Sessions.id == session_id)
@@ -74,7 +67,7 @@ async def get_session(user: Users = Depends(get_current_user), session_id: int =
             raise SessionFoundError
 
 
-@exercise_router.websocket("/sessions/{session_id}")
+@practice_router.websocket("/sessions/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: int):
     """ Эндпойнт для изменения состояния объекта слов заполненных пользователем
 
@@ -123,36 +116,34 @@ async def websocket_endpoint(websocket: WebSocket, session_id: int):
         print('Клиент отключился')
 
 
-@exercise_router.get("/sse_create_session")
-async def sse_create_session(user: Users = Depends(get_current_user),
-                             rq_artist_name: str = Query(...),
-                             rq_song_name: str = Query(...)):
-    async def event_generator():
-        existing_track = None
-        mp3_s3_url = None
-        spotify_data = {
-            'song_title': None,
-            'artist_name': None,
-            'spotify_id': None,
-            'url': None,
-            'album_cover_url': None,
-        }
-        genius_data = {
-            'lyrics': None,
-            'word_count': None,
-            'url': None
-        }
-        # ym_data = {
-        #     'file_name': None,
-        #     'file_path': None,
-        #     'url': None,
-        # }
-        youtube_data = {
-            'file_name': None,
-            'file_path': None,
-            'url': None,
-        }
+@practice_router.websocket("/create_session")
+async def create_session(websocket: WebSocket, user: Users = Depends(get_current_user_ws)):
+    await websocket.accept()
+    query_params = websocket.query_params
+    rq_artist_name = query_params.get("rq_artist_name")
+    rq_song_name = query_params.get("rq_song_name")
 
+    full_track_title = None
+    existing_track = None
+    spotify_data = {
+        'song_title': None,
+        'artist_name': None,
+        'spotify_id': None,
+        'url': None,
+        'album_cover_url': None,
+    }
+    genius_data = {
+        'lyrics': None,
+        'word_count': None,
+        'url': None
+    }
+    youtube_data = {
+        'file_name': None,
+        'file_path': None,
+        'url': None,
+    }
+
+    try:
         # Создаём запрос пользователя
         session_request: SessionRequests = await SessionRequestsDAO.create(
             user_id=user.id,
@@ -161,18 +152,17 @@ async def sse_create_session(user: Users = Depends(get_current_user),
             rq_title=rq_song_name
         )
 
-        yield await sse_resp_wrapper("Starting track search...")
-
-        print(f'rq_artist_name: {rq_artist_name}\nrq_song_name: {rq_song_name}')
-
-        # while not ym_data['file_name'] or not ym_data['file_path'] or not genius_data['lyrics']:
-        while not youtube_data['file_name'] or not youtube_data['file_path'] or not genius_data['lyrics']:
+        while not (youtube_data['file_name'] and youtube_data['file_path'] and genius_data['lyrics']):
             song = await SongsApi.get_song(artist_name=rq_artist_name, song_name=rq_song_name)
             if not song and not rq_song_name:
-                yield await sse_resp_wrapper("No tracks with this artist name or band title")
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "No tracks with this artist name or band title"})
                 raise TrackNotFoundError
             elif not song and rq_song_name:
-                yield await sse_resp_wrapper("No such track exists")
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "No such track exists"})
                 raise TrackNotFoundError
 
             spotify_data = await SongsApi.parse_spotify_song_json(song)
@@ -181,74 +171,69 @@ async def sse_create_session(user: Users = Depends(get_current_user),
                 spotify_id=spotify_data['spotify_id'],
                 artist_name=spotify_data['artist_name'],
                 track_title=spotify_data['song_title'],
-                )
+            )
 
             if existing_track:
                 print('Retrieved from cache')
-                # lyrics = json.loads(existing_track.lyrics)['lyrics']
-                # mp3_s3_url = existing_track.mp3_url
+                full_track_title = f"{existing_track.artist_name} - {existing_track.title}"
                 break
 
-            yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-                                         f"Looking for lyrics...")
+            full_track_title = f"{spotify_data['artist_name']} - {spotify_data['song_title']}"
 
+            # Ищем слова
+            await websocket.send_json({
+                "status": f"{full_track_title}\n"
+                "Looking for lyrics..."})
             genius_data = await SongsApi.get_track_lyrics(spotify_data['artist_name'],
                                                           spotify_data['song_title'],
                                                           rq_artist_name,
                                                           rq_song_name)
             if not genius_data['lyrics'] and not rq_song_name:
-                yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-                                             f"Failed to find lyrics, trying another one track...")
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "Failed to find lyrics, trying another one track..."})
                 continue
-
-            yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-                                         f"Looking for mp3 source...")
-
-            # ym_data = await SongsApi.get_mp3_from_ym(spotify_data['artist_name'],
-            #                                          spotify_data['song_title'],
-            #                                          rq_artist_name,
-            #                                          rq_song_name)
-            # if not ym_data['file_name'] and not ym_data['file_path'] and not rq_song_name:
-            #     yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-            #                                  f"Failed to download the track, trying another one track...")
-            #     continue
-
-            youtube_data = await SongsApi.get_mp3_from_youtube(spotify_data['artist_name'],
-                                                               spotify_data['song_title'],)
-
-            if not youtube_data['file_name'] and not youtube_data['file_path'] and not rq_song_name:
-                yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-                                             f"Failed to download the track, trying another one track...")
-                continue
-
-            # if (not ym_data['file_name'] or not ym_data['file_path'] or not genius_data['lyrics']) and rq_song_name:
-            if (not youtube_data['file_name'] or not youtube_data['file_path'] or not genius_data['lyrics']) and rq_song_name:
-                yield await sse_resp_wrapper("No lyrics or MP3 track available, please try another one")
+            elif not genius_data['lyrics'] and rq_song_name:
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "No lyrics available, please try another one"})
                 raise LyricsOrSourceNotAvailableError
 
-        yield await sse_resp_wrapper(f"{spotify_data['artist_name']} - {spotify_data['song_title']}\n"
-                                     f"Session is ready, final preparations...")
+            # Ищем mp3
+            await websocket.send_json({
+                "status": f"{full_track_title}\n"
+                "Downloading mp3..."})
+            youtube_data = await SongsApi.get_mp3_from_youtube(
+                spotify_data['artist_name'],
+                spotify_data['song_title'],
+            )
+            if not (youtube_data['file_name'] and youtube_data['file_path']) and not rq_song_name:
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "Failed to download the track, trying another one track..."})
+                continue
+            elif not (youtube_data['file_name'] and youtube_data['file_path']) and rq_song_name:
+                await websocket.send_json({
+                    "status": f"{full_track_title}\n"
+                    "No mp3 available, please try another one"})
+                raise LyricsOrSourceNotAvailableError
+
+        await websocket.send_json({
+            "status": f"{full_track_title}\n"
+            "Session is ready, final preparations..."})
 
         # Устанавливаем успешный статус реквесту
         await SessionRequestsDAO.patch(session_request, success=True)
 
-        # Создаем шаблон для заполнения слов
+        # Создаем шаблон для заполнения слов и загружаем mp3 на S3
         if existing_track:
             lyrics_state = await create_lyrics_state(json.loads(existing_track.lyrics)['lyrics'])
             mp3_s3_url = existing_track.mp3_url
         else:
             lyrics_state = await create_lyrics_state(genius_data['lyrics'])
-            # mp3_s3_url = f'{settings.CLOUDFRONT_DOMAIN}/{ym_data['file_name']}'
             mp3_s3_url = f'{settings.CLOUDFRONT_DOMAIN}/{youtube_data['file_name']}'
-
-            # await S3Client.upload(ym_data['file_name'], ym_data['file_path'])
             await S3Client.upload(f'{youtube_data['file_name']}', youtube_data['file_path'])
-
-            # os.remove(ym_data['file_path'])
             os.remove(youtube_data['file_path'])
-
-        # print(youtube_data['duration'])
-        # print(type(youtube_data['duration']))
 
         # Создаем объект трека в бд
         if not existing_track:
@@ -265,7 +250,6 @@ async def sse_create_session(user: Users = Depends(get_current_user),
                 youtube_url=youtube_data['url'],
                 peaks=json.dumps(youtube_data['peaks']),
                 duration=youtube_data['duration'],
-                # ym_url=ym_data['url'],
             )
         else:
             new_track = existing_track
@@ -284,17 +268,9 @@ async def sse_create_session(user: Users = Depends(get_current_user),
             all_points=new_track.word_count,
         )
 
-        yield f'data: {json.dumps({
-            "status": "completed",
-            "session_id": new_session.id,
-            "lyrics": new_track.lyrics,
-            "lyrics_state": lyrics_state,
-            "artist_name": new_track.artist_name,
-            "song_title": new_track.title,
-            "album_cover_url": new_track.album_cover_url,
-            "mp3_path": new_track.mp3_url,
-            "peaks": new_track.peaks,
-            "duration": new_track.duration
-        })}\n\n'
+        await websocket.send_json({"status": "complete",
+                                   "session_id": new_session.id})
+        await websocket.close()
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)

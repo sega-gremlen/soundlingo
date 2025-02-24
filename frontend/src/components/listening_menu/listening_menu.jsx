@@ -1,5 +1,5 @@
 import {useState, useEffect, useCallback} from 'react';
-import {Input, Button, message, Spin, Divider, List, AutoComplete} from 'antd';
+import {Button, message, Spin, Divider, AutoComplete} from 'antd';
 import {useNavigate} from 'react-router-dom';
 import {debounce} from 'lodash';
 
@@ -16,8 +16,8 @@ const ListeningMenu = ({setError}) => {
     const [autoCompleteTrackOptions, setAutoCompleteTrackOptions] = useState([]);
     const [isSearchingTrack, setIsSearchingTrack] = useState(false);
     const [autoCompleteOptions, setAutoCompleteOptions] = useState([]);
-    const SPOTIFY_CLIENT_ID = import.meta.env.SPOTIFY_CLIENT_ID;
-    const SPOTIFY_CLIENT_SECRET = import.meta.env.SPOTIFY_CLIENT_SECRET;
+    const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+    const SPOTIFY_CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
 
     // Хук для получения токена
     useEffect(() => {
@@ -182,45 +182,51 @@ const ListeningMenu = ({setError}) => {
         setLoadingStatus('');
 
         try {
+
             const params = new URLSearchParams({
                 rq_artist_name: artist,
                 rq_song_name: song
             });
 
-            const eventSource = new EventSource(`http://localhost:8000/sse_create_session?${params.toString()}`, {
-                withCredentials: true
-            });
+            const ws = new WebSocket(`ws://localhost:8000/create_session?${params}`);
 
-            eventSource.onmessage = (event) => {
-                const data = JSON.parse(event.data);
+            // ws.onopen = () => {
+            //     // Отправляем параметры после открытия соединения
+            //     ws.send(JSON.stringify({
+            //         rq_artist_name: artist,
+            //         rq_song_name: song
+            //     }));
+            // };
 
-                if (data.status !== 'No lyrics or mp3 track, try choosing another' && data.status !== 'completed') {
-                    setLoadingStatus(data.status);
-                } else if (data.status === 'completed') {
-                    eventSource.close();
-                    setLoading(false);
-                    navigate(`/session/${data.session_id}`, {
-                        state: {
-                            session_id: data.session_id,
-                            lyrics: data.lyrics,
-                            image_url: data.image_url,
-                            artist_name: data.artist_name,
-                            song_title: data.song_title,
-                            peaks: data.peaks,
-                            duration: data.duration,
-                        },
-                    });
-                } else {
-                    setLoadingStatus(data.status);
-                    eventSource.close();
-                    setLoading(false);
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    // Обновляем статус для всех сообщений
+                    if (data.status) {
+                        // Закрываем соединение и переходим только при 'complete'
+                        if (data.status.toLowerCase() === 'complete') {
+                            setLoading(false);
+                            navigate(`/session/${data.session_id}`);
+                        }
+                        // Для остальных статусов просто обновляем UI
+                        else {
+                            setLoadingStatus(data.status);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing message:', e);
                 }
             };
 
-            eventSource.onerror = (error) => {
-                console.error('Connection error:', error);
-                message.error('Error receiving data from the server.');
-                eventSource.close();
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                message.error('Connection error');
+                ws.close();
+                setLoading(false);
+            };
+
+            ws.onclose = () => {
                 setLoading(false);
             };
 
